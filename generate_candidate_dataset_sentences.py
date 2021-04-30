@@ -7,6 +7,7 @@ import jsonlines
 import numpy as np
 import os
 import pickle
+import random
 import time
 from tqdm import tqdm
 from tokenizer import make_tok_seg
@@ -26,14 +27,23 @@ def filter_variant(variant):
         return False
     if en_dictionary.check(variant.lower()):
         return False
-    if variant == "Kumar":
+    if variant == "Kumar" or variant == "GoPro":
         return False
     return True
 
+def load_introducing_paper_to_dataset_mapping():
+    mapping = pickle.load(open("/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/pwc_dataset_to_s2orc_mapping.pkl", 'rb'))
+    reverse_mapping = {}
+    for dataset, paperid in mapping.items():
+        assert len(paperid) == 1
+        reverse_mapping[paperid[0]] = dataset
+    return reverse_mapping
 
 def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_dataset=5):
     pwc_datasets_file = "datasets.json"
     pwc_datasets = json.load(open(pwc_datasets_file))
+
+    paper_to_dataset_mapping = load_introducing_paper_to_dataset_mapping()
 
     dataset_name_lookup_map = defaultdict(list)
     for dataset_meta in pwc_datasets:
@@ -74,9 +84,15 @@ def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_da
             dataset_bearing_sentence = None
             variant = None
 
+            dataset_introduced_by_paper = paper_to_dataset_mapping.get(paper_id, "")
             mention_hits = [dataset_name for hit_type, dataset_name in dataset_hits if hit_type == "mention"]
-            reference_hits = [dataset_name for hit_type, dataset_name in dataset_hits if hit_type == "reference"]
-            mention_and_reference_hits = list(set(mention_hits).intersection(reference_hits))
+            if dataset_introduced_by_paper != "":
+                # Ignore any datasets introduced by this paper, since this is less interesting for us to label.
+                mention_hits = [dataset_name for dataset_name in mention_hits if dataset_name != dataset_introduced_by_paper]
+
+            #reference_hits = [dataset_name for hit_type, dataset_name in dataset_hits if hit_type == "reference"]
+            #mention_and_reference_hits = list(set(mention_hits).intersection(reference_hits))
+            mention_and_reference_hits = list(set(mention_hits))
 
             mention_and_reference_hits = [ds for ds in mention_and_reference_hits if ds not in capped_datasets]
             if len(mention_and_reference_hits) == 0:
@@ -145,6 +161,7 @@ def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_da
                                         })
                 if len(candidate_snippets) % 100 == 0:
                     print(f"{len(candidate_snippets)} snippets extracted.")
+                    pickle.dump(candidate_snippets, open("dataset_sentence_snippets_all_mentions.pkl", 'wb'))
 
                 if len(candidate_snippets) == num_snippets_to_label:
                     return candidate_snippets
@@ -155,9 +172,10 @@ def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_da
 
 def main():
     candidate_snippets = generate_candidate_snippets()
+    random.Random(0).shuffle(candidate_snippets)
     start = time.perf_counter()
     try:
-        pickle.dump(candidate_snippets, open("dataset_sentence_snippets_no_context.pkl", 'wb'))
+        pickle.dump(candidate_snippets, open("dataset_sentence_snippets.pkl", 'wb'))
         end = time.perf_counter()
         print(f"Took {round(end - start, 2)} seconds.")
     except:

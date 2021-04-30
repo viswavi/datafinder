@@ -11,8 +11,7 @@ import pickle
 import random
 import time
 
-DATASET_SNIPPETS_FILE = "dataset_sentence_snippets_no_context.pkl"
-DATASET_SNIPPETS_FILE_WITH_CONTEXT = "dataset_sentence_snippets.pkl"
+DATASET_SNIPPETS_FILE = "dataset_sentence_snippets.pkl"
 
 def print_labeling_standard():
     print("Welcome to the Dataset Tagging Tool.\n")
@@ -31,17 +30,18 @@ def print_labeling_standard():
 
 def load_dataset_sentences(dataset_snippets_file, seed=0):
     dataset_snippets = pickle.load(open(dataset_snippets_file, 'rb'))
-    random.Random(seed).shuffle(dataset_snippets)
     return dataset_snippets
 
 def input_y_n():
     y_n = str(input())
-    return y_n.strip().lower() == "y"
+    return y_n.strip() == "" or y_n.strip().lower() == "y"
 
 def input_y_n_u():
     correct_input=False
     while not correct_input:
         y_n_u = str(input()).strip().lower()
+        if y_n_u == "":
+            y_n_u = "y"
         if y_n_u in ["y", "n", "unclear"]:
             correct_input=True
         else:
@@ -71,18 +71,21 @@ def display_sentence_meta(paper_idx, s2_paper_id, dataset_name, dataset_variants
     print("----\n\nDocument Sections:\n\n" + "\n".join([f"#{i+1}: \t{section}" for i, section in enumerate(candidate_sections)]))
 
 
-def label_sentences():
+def label_sentences(has_single_section):
     start_counter = time.perf_counter()
-    print(f"\nIs this dataset salient to the paper? (y/n/unclear)")
+    print(f"\nIs this dataset salient to the paper? ([y]/n/unclear)")
     salience = input_y_n_u()
 
     if salience == "y":
-        print(f"\nWhich mentions indicate salience? (provide comma-separated list)")
-        salient_indices = input_comma_separated_list()
-        # Salient indices provided are 1-indexed, so make them 0-indexed.
-        salient_indices = [i - 1 for i in salient_indices]
+        if has_single_section:
+            salient_indices = [0]
+        else:
+            print(f"\nWhich mentions indicate salience? (provide comma-separated list)")
+            salient_indices = input_comma_separated_list()
+            # Salient indices provided are 1-indexed, so make them 0-indexed.
+            salient_indices = [i - 1 for i in salient_indices]
     else:
-        salient_indices = None
+        salient_indices = []
 
     end_counter = time.perf_counter()
     print(f"Took {round(end_counter - start_counter, 2)} seconds to label sample!")
@@ -148,12 +151,13 @@ def main(dataset_snippets_file, range_to_label, labels_directory, range_string):
             salience, salient_indices = read_label_for_display(new_label_file)
             existing_labels = {"salience": salience, "salient_indices": salient_indices}
             print(f"Label for document {paper_id} already exists. Current label:\n{json.dumps(existing_labels, indent=2)}")
-            print(f"\nOverwrite? (Y/N)")
+            print(f"\nOverwrite? ([y]/n)")
             overwrite = input_y_n()
             if not overwrite:
                 continue
 
-        salience, salient_indices = label_sentences()
+        has_single_section = len(candidate_sections) == 1
+        salience, salient_indices = label_sentences(has_single_section)
         write_label(new_label_file, paper_idx, dataset_s2_id, salience, salient_indices, dataset_name, dataset_variants, candidate_sections)
 
     end_timer = time.perf_counter()
@@ -165,7 +169,6 @@ if __name__ == "__main__":
     parser.add_argument('--labeler-name', type=str, required=True, help="Please list your Andrew ID.")
     parser.add_argument('--range-to-label', type=str, default="1, 3000", help="One-indexed range. Can be either a single index (e.g. \"10\") or an inclusive range (e.g. \"11,20\").")
     parser.add_argument('--out-labels-directory', type=str, default="dataset_labels", help="Will create if it doesn't currently exist.")
-    parser.add_argument('--with-sentence-context', action='store_true', help="If true, will display a context of one sentence on each side of the sentence to label.")
     args = parser.parse_args()
 
     if "," in args.range_to_label:
@@ -184,10 +187,5 @@ if __name__ == "__main__":
         range_to_label = [range_to_label-1]
     else:
         raise ValueError("Unexpected data type.")
-    
-    if args.with_sentence_context:
-        dataset_snippets_file=DATASET_SNIPPETS_FILE_WITH_CONTEXT
-    else:
-        dataset_snippets_file=DATASET_SNIPPETS_FILE
 
-    main(dataset_snippets_file, range_to_label, args.out_labels_directory, range_string)
+    main(DATASET_SNIPPETS_FILE, range_to_label, args.out_labels_directory, range_string)
