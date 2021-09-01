@@ -14,13 +14,12 @@ import time
 def print_labeling_standard():
     print("Welcome to the Dataset Tagging Tool.\n")
     print("The labeling task is that given a dataset name and a paper, identify whether " + 
-          "the paper uses this dataset in its model training, experiments, or evaluation " +
-          "(a property which we refer to as \"salience\"). " +
+          "the paper uses this dataset in its model training, experiments, or evaluation. " +
           "We will show you a list of snippets from a single paper, corresponding to a set of " + 
-          "mentions of a given dataset.\nFirst write whether this dataset is salient to the paper. " +
-          "Then, if salient, list the 1-2 snippets from the paper that most explicitly, unambiguously " +
+          "mentions of a given dataset.\nFirst write whether this dataset is used in the the paper. " +
+          "Then, if used, list the 1-2 snippets from the paper that most explicitly, unambiguously " +
           "state that the paper uses the dataset.")
-    print("If it's not abundantly clear whether the dataset is salient or not, enter \"unclear\".")
+    print("If it's not abundantly clear whether the dataset is used or not, enter \"unclear\".")
     print(f"\nIf you wish to go back and update an annotation, Ctrl-C out of this tool, and " +
            "rerun it with the `--range-to-label <example_idx>` argument.")
     time.sleep(1)
@@ -47,10 +46,10 @@ def input_y_n_u():
     return y_n_u
 
 def input_comma_separated_list():
-    salient_indices = str(input())
     correct_input=False
     while not correct_input:
         try:
+            salient_indices = str(input())
             str_indices = salient_indices.split(',')
             indices = [int(s.strip()) for s in str_indices]
             correct_input=True
@@ -71,14 +70,14 @@ def display_sentence_meta(paper_idx, s2_paper_id, dataset_name, dataset_variants
 
 def label_sentences(has_single_section):
     start_counter = time.perf_counter()
-    print(f"\nIs this dataset salient to the paper? ([y]/n/unclear)")
+    print(f"\nIs this dataset used in the paper? ([y]/n/unclear)")
     salience = input_y_n_u()
 
     if salience == "y":
         if has_single_section:
             salient_indices = [0]
         else:
-            print(f"\nWhich mentions indicate salience? (provide comma-separated list)")
+            print(f"\nWhich mentions indicate that the dataset is used? (provide comma-separated list)")
             salient_indices = input_comma_separated_list()
             # Salient indices provided are 1-indexed, so make them 0-indexed.
             salient_indices = [i - 1 for i in salient_indices]
