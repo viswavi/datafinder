@@ -1,3 +1,4 @@
+import argparse
 import enchant
 from collections import defaultdict
 import glob
