@@ -22,13 +22,18 @@ en_dictionary = enchant.Dict("en_US")
 # Directory containing S2ORC full texts (>75GB)
 full_texts_directory = "/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_full_texts/"
 
+VARIANT_IGNORELIST = set(["kumar", "gopro", "pubmed", "linux", "flickr", "cuhk"])
+
 def filter_variant(variant):
     if len(variant) <= 3:
         return False
-    if en_dictionary.check(variant.lower()):
+    variant_lower = variant.lower()
+    if en_dictionary.check(variant_lower):
         return False
-    if variant == "Kumar" or variant == "GoPro":
+
+    if variant_lower in VARIANT_IGNORELIST:
         return False
+
     return True
 
 def load_introducing_paper_to_dataset_mapping():
@@ -49,8 +54,7 @@ def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_da
     for dataset_meta in pwc_datasets:
         candidate_variants = [dataset_meta["name"]] + dataset_meta.get("variants", [])
         for variant in candidate_variants:
-            if filter_variant(variant):
-                dataset_name_lookup_map[dataset_meta["name"]].append(variant)
+            dataset_name_lookup_map[dataset_meta["name"]].append(variant)
     
     full_texts = glob.glob(os.path.join(full_texts_directory, "*.jsonl.gz"))
     # Shuffle texts, in case there's some bias in the order of shards on S2ORC.
@@ -72,6 +76,9 @@ def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_da
         s2orc_metadata = jsonlines.Reader(shard)
         hits = 0
 
+        valid_cs_documents_file = os.path.join(full_texts_directory, f"cs_paper_list_{shard_id}.json")
+        valid_cs_documents = set(json.load(open(valid_cs_documents_file)))
+
         current_number_of_extracted_snippets = len(candidate_snippets)
         for doc in tqdm(s2orc_metadata):
             paper_id = doc['paper_id']
@@ -84,17 +91,20 @@ def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_da
             dataset_bearing_sentence = None
             variant = None
 
-            dataset_introduced_by_paper = paper_to_dataset_mapping.get(paper_id, "")
+            if paper_id in paper_to_dataset_mapping:
+                # Ignore any dataset-introducing papers, since our focus is on system- or model-building papers.
+                continue
+
             mention_hits = [dataset_name for hit_type, dataset_name in dataset_hits if hit_type == "mention"]
-            if dataset_introduced_by_paper != "":
-                # Ignore any datasets introduced by this paper, since this is less interesting for us to label.
-                mention_hits = [dataset_name for dataset_name in mention_hits if dataset_name != dataset_introduced_by_paper]
 
-            #reference_hits = [dataset_name for hit_type, dataset_name in dataset_hits if hit_type == "reference"]
-            #mention_and_reference_hits = list(set(mention_hits).intersection(reference_hits))
-            mention_and_reference_hits = list(set(mention_hits))
+            reference_hits = [dataset_name for hit_type, dataset_name in dataset_hits if hit_type == "reference"]
+            mention_and_reference_hits = list(set(mention_hits).intersection(reference_hits))
+            #if paper_id not in valid_cs_documents:
+            # // REMOVED GENRE FILTER
+            #    continue
+            # mention_and_reference_hits = list(set(mention_hits))
 
-            mention_and_reference_hits = [ds for ds in mention_and_reference_hits if ds not in capped_datasets]
+            #mention_and_reference_hits = [ds for ds in mention_and_reference_hits if ds not in capped_datasets]
             if len(mention_and_reference_hits) == 0:
                 continue
 
@@ -161,7 +171,7 @@ def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_da
                                         })
                 if len(candidate_snippets) % 100 == 0:
                     print(f"{len(candidate_snippets)} snippets extracted.")
-                    pickle.dump(candidate_snippets, open("dataset_sentence_snippets_all_mentions.pkl", 'wb'))
+                    pickle.dump(candidate_snippets, open("dataset_sentence_snippets_no_cap_ref_match_no_variant_filter_min_2_mentions.pkl", 'wb'))
 
                 if len(candidate_snippets) == num_snippets_to_label:
                     return candidate_snippets
@@ -175,7 +185,7 @@ def main():
     random.Random(0).shuffle(candidate_snippets)
     start = time.perf_counter()
     try:
-        pickle.dump(candidate_snippets, open("dataset_sentence_snippets.pkl", 'wb'))
+        pickle.dump(candidate_snippets, open("dataset_sentence_snippets_no_cap_ref_match_no_variant_filter_min_2_mentions.pkl", 'wb'))
         end = time.perf_counter()
         print(f"Took {round(end - start, 2)} seconds.")
     except:
