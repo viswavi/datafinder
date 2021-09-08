@@ -1,6 +1,8 @@
 """
 Usage:
-python label_dataset_sentences.py --labeler-name vijayv --range-to-label 1,6
+python label_dataset_sentences.py --labeler-name vijayv \
+    --raw-dataset-sentences-file raw_dataset_sentences/dataset_sentence_snippets_no_cap_ref_match_variant_filter.pkl \
+    --range-to-label 5,20
 
 """
 
