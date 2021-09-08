@@ -161,22 +161,19 @@ def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_da
                                 sentence_context = sentence_context[:-1]
                                 dataset_bearing_sentences.append(sentence_context)
 
-                if len(dataset_bearing_sentences) <= 1:
+                dataset_bearing_sentences_no_pretraining = []
+                for s in dataset_bearing_sentences:
+                    if "pretrain" not in s and "pre-train" not in s:
+                        dataset_bearing_sentences_no_pretraining.append(s)
+
+                if len(dataset_bearing_sentences_no_pretraining) <= 1:
                     continue
-                else:
-                    num_pretraining = 0
-                    for s in dataset_bearing_sentences:
-                        if "pretrain" or "pre-train" in s:
-                            num_pretraining += 1
-                    if len(dataset_bearing_sentences) - num_pretraining <= 1:
-                        # Want quality sentences that don't simply refer to pretraining on a dataset.
-                        continue
 
                 candidate_snippets.append({
                                             "paper_id": paper_id,
                                             "candidate_dataset": dataset_name,
                                             "dataset_variants": dataset_variants,
-                                            "candidate_sections": dataset_bearing_sentences,
+                                            "candidate_sections": dataset_bearing_sentences_no_pretraining,
                                         })
                 if len(candidate_snippets) % 100 == 0:
                     print(f"{len(candidate_snippets)} snippets extracted.")
