@@ -1,3 +1,4 @@
+import argparse
 import enchant
 from collections import defaultdict
 import glob
@@ -160,8 +161,16 @@ def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_da
                                 sentence_context = sentence_context[:-1]
                                 dataset_bearing_sentences.append(sentence_context)
 
-                if len(dataset_bearing_sentences) == 0:
+                if len(dataset_bearing_sentences) <= 1:
                     continue
+                else:
+                    num_pretraining = 0
+                    for s in dataset_bearing_sentences:
+                        if "pretrain" or "pre-train" in s:
+                            num_pretraining += 1
+                    if len(dataset_bearing_sentences) - num_pretraining <= 1:
+                        # Want quality sentences that don't simply refer to pretraining on a dataset.
+                        continue
 
                 candidate_snippets.append({
                                             "paper_id": paper_id,

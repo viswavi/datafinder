@@ -1,6 +1,8 @@
 """
 Usage:
-python label_dataset_sentences.py --labeler-name vijayv --range-to-label 1,6
+python label_dataset_sentences.py --labeler-name vijayv \
+    --raw-dataset-sentences-file raw_dataset_sentences/dataset_sentence_snippets_no_cap_ref_match_variant_filter.pkl \
+    --range-to-label 5,20
 
 """
 
@@ -10,8 +12,6 @@ import os
 import pickle
 import random
 import time
-
-DATASET_SNIPPETS_FILE = "dataset_sentence_snippets.pkl"
 
 def print_labeling_standard():
     print("Welcome to the Dataset Tagging Tool.\n")
@@ -168,8 +168,8 @@ if __name__ == "__main__":
     parser.add_argument('--labeler-name', type=str, required=True, help="Please list your Andrew ID.")
     parser.add_argument('--range-to-label', type=str, default="1, 3000", help="One-indexed range. Can be either a single index (e.g. \"10\") or an inclusive range (e.g. \"11,20\").")
     parser.add_argument('--out-labels-directory', type=str, default="dataset_labels", help="Will create if it doesn't currently exist.")
-    parser.add_argument('--dataset-snippets-file', type=str, default=DATASET_SNIPPETS_FILE, help="pickle file to load dataset sentences from")
-
+    parser.add_argument('--raw-dataset-sentences-file', type=str, default="raw_dataset_sentences/dataset_sentence_snippets.pkl",
+                        help="Path to local pickle file containing raw dataset sentences for labeling")
     args = parser.parse_args()
 
     if "," in args.range_to_label:
@@ -189,4 +189,4 @@ if __name__ == "__main__":
     else:
         raise ValueError("Unexpected data type.")
 
-    main(args.dataset_snippets_file, range_to_label, args.out_labels_directory, range_string)
+    main(args.raw_dataset_sentences_file, range_to_label, args.out_labels_directory, range_string)
