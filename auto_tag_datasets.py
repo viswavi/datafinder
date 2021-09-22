@@ -1,5 +1,4 @@
 import argparse
-import enchant
 from collections import defaultdict
 import glob
 import gzip
@@ -15,8 +14,6 @@ np.random.seed(1900)
 
 # Construct spaCy sentence segmenter.
 nlp = make_tok_seg()
-
-en_dictionary = enchant.Dict("en_US")
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output-file', type=str, default="tagged_datasets.jsonl")
