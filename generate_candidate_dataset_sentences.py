@@ -1,4 +1,3 @@
-import argparse
 import enchant
 from collections import defaultdict
 import glob
@@ -11,39 +10,13 @@ import pickle
 import random
 import time
 from tqdm import tqdm
-from tokenizer import make_tok_seg
+
+from auto_tag_datasets import load_introducing_paper_to_dataset_mapping, nlp
 
 np.random.seed(1900)
 
-# Construct spaCy sentence segmenter.
-nlp = make_tok_seg()
-
-en_dictionary = enchant.Dict("en_US")
-
 # Directory containing S2ORC full texts (>75GB)
 full_texts_directory = "/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_full_texts/"
-
-VARIANT_IGNORELIST = set(["kumar", "gopro", "pubmed", "linux", "flickr", "cuhk"])
-
-def filter_variant(variant):
-    if len(variant) <= 3:
-        return False
-    variant_lower = variant.lower()
-    if en_dictionary.check(variant_lower):
-        return False
-
-    if variant_lower in VARIANT_IGNORELIST:
-        return False
-
-    return True
-
-def load_introducing_paper_to_dataset_mapping():
-    mapping = pickle.load(open("/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/pwc_dataset_to_s2orc_mapping.pkl", 'rb'))
-    reverse_mapping = {}
-    for dataset, paperid in mapping.items():
-        assert len(paperid) == 1
-        reverse_mapping[paperid[0]] = dataset
-    return reverse_mapping
 
 def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_dataset=5):
     pwc_datasets_file = "datasets.json"
@@ -77,9 +50,6 @@ def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_da
         s2orc_metadata = jsonlines.Reader(shard)
         hits = 0
 
-        valid_cs_documents_file = os.path.join(full_texts_directory, f"cs_paper_list_{shard_id}.json")
-        valid_cs_documents = set(json.load(open(valid_cs_documents_file)))
-
         current_number_of_extracted_snippets = len(candidate_snippets)
         for doc in tqdm(s2orc_metadata):
             paper_id = doc['paper_id']
@@ -100,10 +70,6 @@ def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_da
 
             reference_hits = [dataset_name for hit_type, dataset_name in dataset_hits if hit_type == "reference"]
             mention_and_reference_hits = list(set(mention_hits).intersection(reference_hits))
-            #if paper_id not in valid_cs_documents:
-            # // REMOVED GENRE FILTER
-            #    continue
-            # mention_and_reference_hits = list(set(mention_hits))
 
             #mention_and_reference_hits = [ds for ds in mention_and_reference_hits if ds not in capped_datasets]
             if len(mention_and_reference_hits) == 0:
@@ -191,7 +157,7 @@ def main():
     random.Random(0).shuffle(candidate_snippets)
     start = time.perf_counter()
     try:
-        pickle.dump(candidate_snippets, open("dataset_sentence_snippets_no_cap_ref_match_no_variant_filter_min_2_mentions.pkl", 'wb'))
+        pickle.dump(candidate_snippets, open("dataset_sentence_scratch.pkl", 'wb'))
         end = time.perf_counter()
         print(f"Took {round(end - start, 2)} seconds.")
     except:

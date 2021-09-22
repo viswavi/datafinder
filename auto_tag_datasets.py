@@ -1,5 +1,4 @@
 import argparse
-import enchant
 from collections import defaultdict
 import glob
 import gzip
@@ -16,8 +15,6 @@ np.random.seed(1900)
 # Construct spaCy sentence segmenter.
 nlp = make_tok_seg()
 
-en_dictionary = enchant.Dict("en_US")
-
 parser = argparse.ArgumentParser()
 parser.add_argument('--output-file', type=str, default="tagged_datasets.jsonl")
 parser.add_argument('--s2orc-full-text-directory', type=str, default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_full_texts/")
@@ -31,14 +28,12 @@ def load_introducing_paper_to_dataset_mapping():
         reverse_mapping[paperid[0]] = dataset
     return reverse_mapping
 
-def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping, full_texts_directory, metadata_directory, num_snippets_to_label=-1, max_repetitions_for_dataset=5):
+def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping, full_texts_directory, metadata_directory):
     full_texts = glob.glob(os.path.join(full_texts_directory, "*.jsonl.gz"))
     # Shuffle texts, in case there's some bias in the order of shards on S2ORC.
     np.random.shuffle(full_texts)
 
-    candidate_dataset_counts = defaultdict(int)
     # List of datasets that have already been requested for labeling 
-    capped_datasets = []
     num_documents_written = 0
     for full_text_shard_path in full_texts:
         shard_id = full_text_shard_path.split(".jsonl.gz")[0].split("/")[-1]
@@ -79,16 +74,12 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
             reference_hits = [dataset_name for hit_type, dataset_name in dataset_hits if hit_type == "reference"]
             mention_and_reference_hits = list(set(mention_hits).intersection(reference_hits))
 
-            #mention_and_reference_hits = [ds for ds in mention_and_reference_hits if ds not in capped_datasets]
             if len(mention_and_reference_hits) == 0:
                 continue
 
             dataset_tags = []
             # dataset_name = np.random.choice(mention_and_reference_hits)
             for dataset_name in mention_and_reference_hits:
-                candidate_dataset_counts[dataset_name] += 1
-                if candidate_dataset_counts[dataset_name] >= max_repetitions_for_dataset:
-                    capped_datasets.append(dataset_name)
 
                 dataset_variants = dataset_name_lookup_map[dataset_name]
                 dataset_bearing_sentences = []
@@ -143,8 +134,9 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
 
                 if len(dataset_bearing_sentences_no_pretraining) >= 1:
                     dataset_tags.append(dataset_name)
-            doc_metadata["datasets"] = dataset_tags
+    
             if len(dataset_tags) > 0:
+                doc_metadata["datasets"] = dataset_tags
                 jsonl_writer.write(doc_metadata)
                 num_documents_written += 1
         print(f"{num_documents_written} documents written to file so far.")
