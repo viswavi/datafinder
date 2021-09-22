@@ -139,8 +139,6 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
                     dataset_tags.append(dataset_name)
     
             if len(dataset_tags) > 0:
-                section_texts = [section["text"] for section in doc["body_text"]]
-                body_text = "\n".join(section_texts)
                 doc_metadata["datasets"] = dataset_tags
                 jsonl_writer.write(doc_metadata)
                 num_documents_written += 1
