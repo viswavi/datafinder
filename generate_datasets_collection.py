@@ -1,6 +1,9 @@
 '''
 python generate_datasets_collection.py
 
+python generate_datasets_collection.py --exclude-abstract --exclude-full-text --output-file dataset_search_collection_no_abstracts_or_paper_text.jsonl"
+python generate_datasets_collection.py --exclude-abstract --output-file dataset_search_collection_no_paper_text.jsonl"
+
 This script converts the full set of datasets from PapersWithCode into a jsonlines file, read to be consumed into an
 Anserini search index.
 
@@ -24,6 +27,9 @@ parser.add_argument('--dataset-to-s2orc-mapping-file',
                     help="This file contains the papers introducing each dataset")
 parser.add_argument('--s2orc-full-text-directory', type=str, default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_full_texts/")
 parser.add_argument('--s2orc-metadata-directory', type=str, default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_metadata/")
+parser.add_argument('--exclude-abstract', action="store_true")
+parser.add_argument('--exclude-full-text', action="store_true")
+
 
 def load_metadata_iterator(metadata_files):
     for f in metadata_files:
@@ -57,7 +63,13 @@ def construct_dataset_to_variants_mapping(pwc_datasets_metadata):
         dataset_variants_mapping[dataset["name"]] = dataset.get("variants", "")
     return dataset_variants_mapping
 
-def construct_dataset_document_collection(jsonl_writer, dataset_s2orc_id_mapping, pwc_datasets_metadata, s2orc_full_text_directory, s2orc_metadata_directory):
+def construct_dataset_document_collection(jsonl_writer,
+                                          dataset_s2orc_id_mapping,
+                                          pwc_datasets_metadata,
+                                          s2orc_full_text_directory,
+                                          s2orc_metadata_directory,
+                                          exclude_abstract,
+                                          exclude_full_text):
     dataset_to_descriptions = construct_dataset_to_description_mapping(pwc_datasets_metadata)
     dataset_to_variants = construct_dataset_to_variants_mapping(pwc_datasets_metadata)
     paper_title_to_datasets_map, paper_url_to_datasets_map = construct_paper_info_to_dataset_mapping(pwc_datasets_metadata)
@@ -115,6 +127,10 @@ def construct_dataset_document_collection(jsonl_writer, dataset_s2orc_id_mapping
             body_text = "\n".join(section_texts)
             dataset_document["body_text"] = body_text
             matched_datasets.add(dataset_name)
+            if exclude_abstract:
+                del dataset_document["abstract"]
+            if exclude_full_text:
+                del dataset_document["body_text"]
             jsonl_writer.write(dataset_document)
 
         print(f"{len(matched_datasets)} documents written to file so far.")
@@ -128,9 +144,14 @@ def construct_dataset_document_collection(jsonl_writer, dataset_s2orc_id_mapping
             dataset_title = dataset_to_paper_title_map.get(dataset_name)
             if dataset_title is not None:
                 dataset_document["title"] = dataset_title
+            else:
+                dataset_document["title"] = ""
             dataset_document["contents"] = dataset_to_descriptions[dataset_name]
-            if dataset_name in dataset_to_variants:
-                dataset_document["variants"] = dataset_to_variants[dataset_name]
+            dataset_document["variants"] = dataset_to_variants[dataset_name]
+            if not exclude_abstract:
+                dataset_document["abstract"] = ""
+            if not exclude_full_text:
+                dataset_document["body_text"] = ""
             matched_datasets.add(dataset_name)
             jsonl_writer.write(dataset_document)
     print(f"Wrote {len(matched_datasets) - num_matched_datasets} datasets that could not be matched to S2orc.")
@@ -146,4 +167,10 @@ if __name__ == "__main__":
 
     with open(args.output_file, 'wb') as f:
         writer = jsonlines.Writer(f)
-        construct_dataset_document_collection(writer, dataset_s2orc_id_mapping, pwc_datasets_metadata, args.s2orc_full_text_directory, args.s2orc_metadata_directory)
+        construct_dataset_document_collection(writer,
+                                              dataset_s2orc_id_mapping,
+                                              pwc_datasets_metadata,
+                                              args.s2orc_full_text_directory,
+                                              args.s2orc_metadata_directory,
+                                              args.exclude_abstract,
+                                              args.exclude_full_text)
