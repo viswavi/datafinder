@@ -1,0 +1,3 @@
+[submodule "scitldr"]
+	path = scitldr
+	url = https://github.com/allenai/scitldr
