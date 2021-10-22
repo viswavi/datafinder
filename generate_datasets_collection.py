@@ -1,8 +1,8 @@
 '''
 python generate_datasets_collection.py
 
-python generate_datasets_collection.py --exclude-abstract --exclude-full-text --output-file dataset_search_collection_no_abstracts_or_paper_text.jsonl"
-python generate_datasets_collection.py --exclude-abstract --output-file dataset_search_collection_no_paper_text.jsonl"
+python generate_datasets_collection.py --exclude-abstract --exclude-full-text --output-file dataset_search_collection_no_abstracts_or_paper_text.jsonl
+python generate_datasets_collection.py --exclude-abstract --output-file dataset_search_collection_no_paper_text.jsonl
 
 This script converts the full set of datasets from PapersWithCode into a jsonlines file, read to be consumed into an
 Anserini search index.

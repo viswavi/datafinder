@@ -22,9 +22,10 @@ if __name__ == "__main__":
         for row in jsonlines.open(args.full_documents):
             if not args.exclude_abstract:
                 abstract = "" if row.get("abstract") is None else row["abstract"]
-                row["contents"] = row["contents"] + "\n" + abstract
+                row["contents"] = row["contents"] + "\t" + abstract
             if not args.exclude_full_text:
                 body_text = "" if row.get("body_text") is None else row["body_text"]
-                row["contents"] = row["contents"] + "\n" + body_text
+                row["contents"] = row["contents"] + "\t" + body_text
             del row["abstract"]
             del row["body_text"]
+            writer.write(row)

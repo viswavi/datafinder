@@ -135,7 +135,7 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
                 if len(dataset_bearing_sentences_no_pretraining) >= 1:
                     dataset_tags.append(dataset_name)
     
-            if len(dataset_tags) > 0:
+            if len(dataset_tags) > 0 and doc_metadata.get("abstract") is not None:
                 doc_metadata["datasets"] = dataset_tags
                 jsonl_writer.write(doc_metadata)
                 num_documents_written += 1
