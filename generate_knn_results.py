@@ -5,7 +5,7 @@ python generate_knn_results.py \
     --training-set tagged_datasets.jsonl \
     --training-tldrs tagged_dataset_tldrs.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
-    --output-file data/test/retrieved_documents_knn_exact.trec \
+    --output-file data/test/retrieved_documents_knn_exact_tfidf.trec \
     --vectorizer-type tfidf \
     --knn-aggregator exact_top
 
@@ -18,6 +18,16 @@ python generate_knn_results.py \
     --output-file data/test/retrieved_documents_knn_weighted.trec \
     --vectorizer-type tfidf \
     --knn-aggregator weighted
+
+python generate_knn_results.py \
+    --remove-punctuation \
+    --remove-stopwords \
+    --training-set tagged_datasets.jsonl \
+    --training-tldrs tagged_dataset_tldrs.hypo \
+    --search-collection dataset_search_collection/documents.jsonl \
+    --output-file data/test/retrieved_documents_knn_exact_bert.trec \
+    --vectorizer-type bert \
+    --knn-aggregator exact_top
 '''
 
 import argparse
@@ -30,6 +40,7 @@ import pickle
 import string
 import time
 from typing import List
+from transformers import pipeline
 
 import faiss
 from nltk.corpus import stopwords
@@ -72,13 +83,25 @@ def preprocess_text(query, remove_function_words=False, remove_punctuation=False
         query = " ".join(non_stopwords)
     return query
 
+def construct_scibert_vectorizer(device=3):
+    model = "allenai/scibert_scivocab_uncased"
+    feature_extractor = pipeline('feature-extraction', model=model, tokenizer=model, device=device)
+    return feature_extractor
+
+
 def vectorize_text(text_lines, vectorizer, vectorizer_type):
+    start = time.perf_counter()
     if vectorizer_type == "tfidf":
         vectorized_text_sparse = vectorizer.transform(text_lines)
         vectorized_text = np.array(vectorized_text_sparse.todense())
-        return vectorized_text
+    elif vectorizer_type == "bert":
+        bert_vectors = vectorizer(text_lines)
+        vectorized_text = np.array([v[0][0] for v in bert_vectors])
     else:
-        raise NotImplementedError
+        raise ValueError(f"Unsupported vectorizer type supplied: {vectorizer_type}")
+    end = time.perf_counter()
+    print(f"Vectorizing {len(text_lines)} lines took {round(end-start, 4)} seconds.")
+    return vectorized_text
 
 def prepare_training_set(training_set, training_tldrs, vectorizer_type="tfidf", overwrite_cache=False, remove_function_words=False, remove_punctuation=False, lowercase_query=False, remove_stopwords=False):
     TRAINING_SET_CACHE = os.path.join(PICKLE_CACHES_DIR, vectorizer_type + "_vectorized_data.pkl")
@@ -102,10 +125,12 @@ def prepare_training_set(training_set, training_tldrs, vectorizer_type="tfidf", 
         if vectorizer_type == "tfidf":
             vectorizer = TfidfVectorizer(min_df=2)
             vectorizer.fit(texts)
-            vectorized_texts = vectorize_text(texts, vectorizer, vectorizer_type)
-            vectorized_training_data = list(zip(vectorized_texts, dataset_labels))
+        elif vectorizer_type == "bert":
+            vectorizer = construct_scibert_vectorizer()
         else:
             raise ValueError(f"vectorizer type {vectorizer_type} unsupported")
+        vectorized_texts = vectorize_text(texts, vectorizer, vectorizer_type)
+        vectorized_training_data = list(zip(vectorized_texts, dataset_labels))
         pickle.dump(vectorized_training_data, open(TRAINING_SET_CACHE, 'wb'))
         pickle.dump(vectorizer, open(VECTORIZER_CACHE, 'wb'))
     return vectorized_training_data, vectorizer
@@ -195,7 +220,6 @@ if __name__ == "__main__":
     vectorized_training_data, vectorizer = prepare_training_set(training_set,
                                                                 training_set_tldrs,
                                                                 vectorizer_type=args.vectorizer_type,
-                                                                overwrite_cache=True,
                                                                 remove_function_words=args.remove_function_words,
                                                                 remove_punctuation=args.remove_punctuation,
                                                                 lowercase_query=args.lowercase_query,
