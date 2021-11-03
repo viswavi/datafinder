@@ -6,8 +6,8 @@
 
 ### Requirements
 
-'''
+```
 pip install pyserini
 pip install tevatron
 conda install faiss
-'''
+```
