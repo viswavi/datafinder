@@ -1,3 +1,11 @@
+'''
+python auto_tag_datasets.py --output-file tagged_datasets.jsonl
+
+or
+
+python auto_tag_datasets.py --output-file tagged_dataset_negatives.jsonl --tag-negatives
+'''
+
 import argparse
 from collections import defaultdict
 import glob
@@ -19,6 +27,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--output-file', type=str, default="tagged_datasets.jsonl")
 parser.add_argument('--s2orc-full-text-directory', type=str, default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_full_texts/")
 parser.add_argument('--s2orc-metadata-directory', type=str, default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_metadata/")
+parser.add_argument('--tag-negatives', action="store_true")
 
 def load_introducing_paper_to_dataset_mapping():
     mapping = pickle.load(open("/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/pwc_dataset_to_s2orc_mapping.pkl", 'rb'))
@@ -28,7 +37,7 @@ def load_introducing_paper_to_dataset_mapping():
         reverse_mapping[paperid[0]] = dataset
     return reverse_mapping
 
-def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping, full_texts_directory, metadata_directory):
+def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping, full_texts_directory, metadata_directory, tag_negatives=False):
     full_texts = glob.glob(os.path.join(full_texts_directory, "*.jsonl.gz"))
     # Shuffle texts, in case there's some bias in the order of shards on S2ORC.
     np.random.shuffle(full_texts)
@@ -61,10 +70,6 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
                 continue
             dataset_hits = dataset_index[paper_id]
 
-            dataset_bearing_section = None
-            dataset_bearing_sentence = None
-            variant = None
-
             if paper_id in paper_to_dataset_mapping:
                 # Ignore any dataset-introducing papers, since our focus is on system- or model-building papers.
                 continue
@@ -77,63 +82,67 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
             if len(mention_and_reference_hits) == 0:
                 continue
 
-            dataset_tags = []
-            # dataset_name = np.random.choice(mention_and_reference_hits)
-            for dataset_name in mention_and_reference_hits:
+            if tag_negatives:
+                mention_or_reference_hits = list(set(mention_hits).union(reference_hits))
+                dataset_tags = [d for d in dataset_name_lookup_map if d not in mention_or_reference_hits]
+            else:
+                dataset_tags = []
+                # dataset_name = np.random.choice(mention_and_reference_hits)
+                for dataset_name in mention_and_reference_hits:
 
-                dataset_variants = dataset_name_lookup_map[dataset_name]
-                dataset_bearing_sentences = []
+                    dataset_variants = dataset_name_lookup_map[dataset_name]
+                    dataset_bearing_sentences = []
 
-                critical_section=False
-                for section in doc["body_text"]:
-                    lowercased_section_title = section['section'].lower()
-                    critical_section_headers = ["dataset", "experiment", "evaluation", "result", "training", "testing"]
-                    noncritical_section_headers = ["related work", "future work", "discussion", "conclusion", "concluding"]
+                    critical_section=False
+                    for section in doc["body_text"]:
+                        lowercased_section_title = section['section'].lower()
+                        critical_section_headers = ["dataset", "experiment", "evaluation", "result", "training", "testing"]
+                        noncritical_section_headers = ["related work", "future work", "discussion", "conclusion", "concluding"]
 
-                    for header in noncritical_section_headers:
-                        if header in lowercased_section_title:
-                            critical_section=False
-                            break
-                    for header in critical_section_headers:
-                        if header in lowercased_section_title:
-                            critical_section=True
-                            break
+                        for header in noncritical_section_headers:
+                            if header in lowercased_section_title:
+                                critical_section=False
+                                break
+                        for header in critical_section_headers:
+                            if header in lowercased_section_title:
+                                critical_section=True
+                                break
 
-                    if not critical_section:
-                        continue
+                        if not critical_section:
+                            continue
 
-                    section_text = section["text"]
-                    variant_hits = [variant for variant in dataset_variants if variant in section_text]
+                        section_text = section["text"]
+                        variant_hits = [variant for variant in dataset_variants if variant in section_text]
 
-                    if len(variant_hits) > 0:
-                        sentences = list(nlp(section_text).sents)
-                        for i, sentence in enumerate(sentences):
-                            hit = False
-                            for word in sentence:
-                                s_word = str(word)
-                                if s_word in variant_hits:
-                                    dataset_bearing_section = section_text
-                                    dataset_bearing_sentence = str(sentence)
-                                    variant = s_word
-                                    hit = True
-                                    break
-                            if hit:
-                                sentence_context = ""
-                                #if i > 0:
-                                    #sentence_context += str(sentences[i-1]) + " "
-                                sentence_context += str(sentences[i]) + " "
-                                #if i < len(sentences) - 1:
-                                    #sentence_context += str(sentences[i+1]) + " "
-                                sentence_context = sentence_context[:-1]
-                                dataset_bearing_sentences.append(sentence_context)
+                        if len(variant_hits) > 0:
+                            sentences = list(nlp(section_text).sents)
+                            for i, sentence in enumerate(sentences):
+                                hit = False
+                                for word in sentence:
+                                    s_word = str(word)
+                                    if s_word in variant_hits:
+                                        dataset_bearing_section = section_text
+                                        dataset_bearing_sentence = str(sentence)
+                                        variant = s_word
+                                        hit = True
+                                        break
+                                if hit:
+                                    sentence_context = ""
+                                    #if i > 0:
+                                        #sentence_context += str(sentences[i-1]) + " "
+                                    sentence_context += str(sentences[i]) + " "
+                                    #if i < len(sentences) - 1:
+                                        #sentence_context += str(sentences[i+1]) + " "
+                                    sentence_context = sentence_context[:-1]
+                                    dataset_bearing_sentences.append(sentence_context)
 
-                dataset_bearing_sentences_no_pretraining = []
-                for s in dataset_bearing_sentences:
-                    if "pretrain" not in s and "pre-train" not in s:
-                        dataset_bearing_sentences_no_pretraining.append(s)
+                    dataset_bearing_sentences_no_pretraining = []
+                    for s in dataset_bearing_sentences:
+                        if "pretrain" not in s and "pre-train" not in s:
+                            dataset_bearing_sentences_no_pretraining.append(s)
 
-                if len(dataset_bearing_sentences_no_pretraining) >= 1:
-                    dataset_tags.append(dataset_name)
+                    if len(dataset_bearing_sentences_no_pretraining) >= 1:
+                        dataset_tags.append(dataset_name)
     
             if len(dataset_tags) > 0 and doc_metadata.get("abstract") is not None:
                 doc_metadata["datasets"] = dataset_tags
@@ -158,7 +167,7 @@ def main():
 
     with open(args.output_file, 'wb') as f:
         writer = jsonlines.Writer(f)
-        tag_datasets(writer, dataset_name_lookup_map, paper_to_dataset_mapping, args.s2orc_full_text_directory, args.s2orc_metadata_directory)
+        tag_datasets(writer, dataset_name_lookup_map, paper_to_dataset_mapping, args.s2orc_full_text_directory, args.s2orc_metadata_directory, tag_negatives=args.tag_negatives)
 
 if __name__ == "__main__":
     main()
