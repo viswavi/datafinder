@@ -150,22 +150,13 @@ def combine_hits(hits: List[SearchResult]) -> List[SearchResult]:
     final_hits = sorted(final_hits, key=lambda result: result.score, reverse=True)
     return final_hits
 
-def knn_search(query_text, query_vectors, faiss_index, training_data, combiner="weighted", num_results=4):
-    start = time.perf_counter()
-    datasets_list = [datasets for _, datasets in training_data]
-
-    if combiner == "exact_top":
-        knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), num_results)
-    else:
-        knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), 10)
-
+def knn_search(knn_distances, knn_indices, datasets_list, combiner="exact_top", num_results=4):
     all_hits = []
-    for row_idx in range(len(query_vectors)):
+    for row_idx in range(len(knn_distances)):
         hits = []
         if combiner == "exact_top":
             for i, score in enumerate(knn_distances[row_idx]):
-                for d in datasets_list[knn_indices[row_idx][i]]:
-                    hits.append(SearchResult(d, score))
+                hits.append(SearchResult(datasets_list[knn_indices[row_idx][i]], score))
         elif combiner == "weighted":
             dataset_weighted_scores = defaultdict(float)
 
@@ -184,8 +175,6 @@ def knn_search(query_text, query_vectors, faiss_index, training_data, combiner="
         else:
             raise ValueError("invalid KNN combiner given")
         all_hits.append(combine_hits(hits))
-    end = time.perf_counter()
-    print(f"Queries took {round(end-start, 4)} seconds for {len(all_hits)} documents")
     return all_hits
 
 
@@ -195,6 +184,26 @@ def construct_faiss_index(vectorized_training_data):
     # index = faiss.GpuIndexFlatL2(vectors.shape[0])
     index.add(vectors)
     return index
+
+
+def write_hits_to_tsv(output_file, all_hits, test_queries, results_limit):
+    num_rows = 0
+    with open(output_file, 'w') as out_file:
+        tsv_writer = csv.writer(out_file, delimiter='\t')
+        tsv_writer.writerow(["QueryID", "Q0", "DocID", "Rank", "Score", "RunID"])
+        for query_idx, hits in enumerate(all_hits):
+            query = test_queries[query_idx]
+            query_id = "_".join(query.split())
+            previous_hits = set()
+            for rank, hit in enumerate(hits):
+                docid = "_".join(hit.docid.split())
+                tsv_writer.writerow([query_id, "Q0", docid, str(rank+1), str(hit.score), "run-1"])
+                num_rows += 1
+                assert docid not in previous_hits
+                previous_hits.add(docid)
+                if results_limit is not None and rank + 1 == results_limit:
+                    break
+    print(f"Wrote {num_rows} rows to {output_file}.")
 
 
 if __name__ == "__main__":
@@ -227,33 +236,28 @@ if __name__ == "__main__":
 
     faiss_index = construct_faiss_index(vectorized_training_data)
 
-    with open(args.output_file, 'w') as out_file:
-        tsv_writer = csv.writer(out_file, delimiter='\t')
-        tsv_writer.writerow(["QueryID", "Q0", "DocID", "Rank", "Score", "RunID"])
+    test_queries = [row for row in open(args.test_queries).read().split("\n") if len(row.split()) != 0] 
+    preprocessed_queries = []
+    for query in test_queries:
+        query_id = "_".join(query.split())
+        query = preprocess_text(query,
+                                remove_function_words=args.remove_function_words,
+                                remove_punctuation=args.remove_punctuation,
+                                lowercase_query=args.lowercase_query,
+                                remove_stopwords=args.remove_stopwords)
+        preprocessed_queries.append(query)
+    vectorized_queries = vectorize_text(preprocessed_queries, vectorizer, vectorizer_type=args.vectorizer_type)
 
-        test_queries = [row for row in open(args.test_queries).read().split("\n") if len(row.split()) != 0] 
-        preprocessed_queries = []
-        for query in test_queries:
-            query_id = "_".join(query.split())
-            query = preprocess_text(query,
-                                    remove_function_words=args.remove_function_words,
-                                    remove_punctuation=args.remove_punctuation,
-                                    lowercase_query=args.lowercase_query,
-                                    remove_stopwords=args.remove_stopwords)
-            preprocessed_queries.append(query)
-        vectorized_queries = vectorize_text(preprocessed_queries, vectorizer, vectorizer_type=args.vectorizer_type)
+    query_vectors = []
+    for i, query_text in enumerate(test_queries):
+        query_vectors.append(vectorized_queries[i])
+    query_vectors = np.array(query_vectors, dtype=np.float32)
+    dataset_ids = [datasets for _, datasets in vectorized_training_data]
 
-        query_vectors = []
-        for i, query_text in enumerate(test_queries):
-            query_vectors.append(vectorized_queries[i])
-        query_vectors = np.array(query_vectors, dtype=np.float32)
-        all_hits = knn_search(test_queries, query_vectors, faiss_index, vectorized_training_data, combiner=args.knn_aggregator)
-        previous_hits = set()
-        for query_idx, hits in enumerate(all_hits):
-            query = test_queries[query_idx]
-            query_id = "_".join(query.split())
-            for rank, hit in enumerate(hits):
-                docid = "_".join(hit.docid.split())
-                tsv_writer.writerow([query_id, "Q0", docid, str(rank+1), str(hit.score), "run-1"])
-                if args.results_limit is not None and rank + 1 == args.results_limit:
-                    break
+    if args.combiner == "exact_top":
+        knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), args.num_results)
+    else:
+        knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), 10)
+    all_hits = knn_search(knn_distances, knn_indices, dataset_ids, combiner=args.knn_aggregator, num_results=args.results_limit)
+
+    write_hits_to_tsv(args.output_file, all_hits, test_queries, args.results_limit)

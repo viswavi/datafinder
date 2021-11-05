@@ -62,13 +62,14 @@ if __name__ == "__main__":
                 query = " ".join(non_stopwords)
             hits = searcher.search(query)
             previous_hits = set()
-            for rank, hit in enumerate(hits):
+            rank = 0
+            for hit in hits:
                 docid = "_".join(hit.docid.split())
                 if docid in previous_hits:
-                    rank -= 1
                     continue
                 else:
                     previous_hits.add(docid)
-                tsv_writer.writerow([query_id, "Q0", docid, str(rank+1), str(hit.score), "run-1"])
-                if args.results_limit is not None and rank + 1 == args.results_limit:
+                    rank += 1
+                tsv_writer.writerow([query_id, "Q0", docid, str(rank), str(hit.score), "run-1"])
+                if args.results_limit is not None and rank == args.results_limit:
                     break

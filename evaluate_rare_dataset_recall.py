@@ -68,7 +68,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('relevant_trec_file', type=str)
     parser.add_argument('retrieved_trec_file', type=str)
-    parser.add_argument('--training-set-documents', type=str, default="tagged_datasets.jsonl")
+    parser.add_argument('--training-set-documents', type=str, default="tagged_dataset_positives.jsonl")
     args = parser.parse_args()
 
     relevant_csv = read_relevant_csv(args.relevant_trec_file)

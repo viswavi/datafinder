@@ -1,10 +1,10 @@
 '''
 python prepare_tevatron_data.py \
-    --tagged-datasets-file tagged_datasets_merged.jsonl \
+    --tagged-datasets-file tagged_datasets_merged_hard_negatives.jsonl \
     --search-collection dataset_search_collection.jsonl \
     --test-queries scirex_queries_and_datasets.json \
-    --output-training-directory tevatron_data/training_raw \
-    --output-search-directory tevatron_data/search_raw
+    --output-training-directory tevatron_data/training_raw_hard_negatives_sep \
+    --output-search-directory tevatron_data/search_raw_sep
 '''
 
 import argparse
@@ -19,11 +19,11 @@ parser.add_argument('--output-metadata-directory', type=str, default="tevatron_d
 parser.add_argument('--output-query-file', type=str, default="tevatron_data/test_queries.jsonl")
 parser.add_argument('--num-shards', type=int, default=1, help="Number of shards of search collection to write")
 parser.add_argument('--test-queries', type=str, default="scirex_queries_and_datasets.json")
-parser.add_argument('--tagged-datasets-file', type=str, default="tagged_datasets_merged.jsonl")
+parser.add_argument('--tagged-datasets-file', type=str, default="tagged_datasets_merged_random_negatives.jsonl")
 parser.add_argument('--search-collection', type=str, default="dataset_search_collection.jsonl")
 
-def format_search_text(row):
-    return "\n".join([get_key_if_not_none(row, "contents"), get_key_if_not_none(row, "title"), get_key_if_not_none(row, "abstract")])
+def format_search_text(row, separator=" [SEP] "):
+    return separator.join([get_key_if_not_none(row, "contents"), get_key_if_not_none(row, "title"), get_key_if_not_none(row, "abstract")])
 
 def generate_doc_ids(documents):
     '''
