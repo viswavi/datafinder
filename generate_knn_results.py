@@ -155,7 +155,7 @@ def knn_search(knn_distances, knn_indices, datasets_list, combiner="exact_top", 
     for row_idx in range(len(knn_distances)):
         hits = []
         if combiner == "exact_top":
-            for i, score in enumerate(knn_distances[row_idx]):
+            for i, score in enumerate(knn_distances[row_idx][:num_results]):
                 hits.append(SearchResult(datasets_list[knn_indices[row_idx][i]], score))
         elif combiner == "weighted":
             dataset_weighted_scores = defaultdict(float)
