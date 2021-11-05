@@ -8,20 +8,16 @@ python sbert_scripts/generate_sbert_predictions_biencoder.py \
 '''
 
 import argparse
-import csv
 import jsonlines
 import numpy as np
 import os
-import random
 import sys
-from torch.utils.data import DataLoader
 
 import faiss
-from sentence_transformers import SentenceTransformer, models, InputExample, losses
-from sentence_transformers.evaluation import EmbeddingSimilarityEvaluator
+from sentence_transformers import SentenceTransformer
 
 sys.path.insert(1, os.path.join(sys.path[0], '..'))
-from generate_knn_results import knn_search, SearchResult, write_hits_to_tsv
+from generate_knn_results import knn_search, write_hits_to_tsv
 from prepare_tevatron_data import format_search_text
 
 parser = argparse.ArgumentParser()
