@@ -83,7 +83,7 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
                 continue
 
             if tag_negatives:
-                mention_or_reference_hits = list(set(mention_hits).union(reference_hits))
+                                                     mention_or_reference_hits = list(set(mention_hits).union(reference_hits))
                 dataset_tags = [d for d in dataset_name_lookup_map if d not in mention_or_reference_hits]
             else:
                 dataset_tags = []

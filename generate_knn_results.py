@@ -2,17 +2,17 @@
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --training-set tagged_datasets.jsonl \
+    --training-set tagged_dataset_positives.jsonl \
     --training-tldrs tagged_dataset_tldrs.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
-    --output-file data/test/retrieved_documents_knn_exact_tfidf.trec \
+    --output-file data/test/retrieved_documents_knn_exact_longer_input_tfidf.trec \
     --vectorizer-type tfidf \
     --knn-aggregator exact_top
 
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --training-set tagged_datasets.jsonl \
+    --training-set tagged_dataset_positives.jsonl \
     --training-tldrs tagged_dataset_tldrs.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
     --output-file data/test/retrieved_documents_knn_weighted.trec \
@@ -22,7 +22,7 @@ python generate_knn_results.py \
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --training-set tagged_datasets.jsonl \
+    --training-set tagged_dataset_positives.jsonl \
     --training-tldrs tagged_dataset_tldrs.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
     --output-file data/test/retrieved_documents_knn_exact_bert.trec \
@@ -96,7 +96,7 @@ def vectorize_text(text_lines, vectorizer, vectorizer_type):
         vectorized_text = np.array(vectorized_text_sparse.todense())
     elif vectorizer_type == "bert":
         bert_vectors = vectorizer(text_lines)
-        vectorized_text = np.array([v[0][0] for v in bert_vectors])
+        vectorized_text = np.array([v[0] for v in bert_vectors])
     else:
         raise ValueError(f"Unsupported vectorizer type supplied: {vectorizer_type}")
     end = time.perf_counter()
