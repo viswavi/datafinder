@@ -11,6 +11,7 @@ or
 
 python merge_tagged_datasets.py \
     --combined-file tagged_datasets_merged_hard_negatives.jsonl \
+    --dataset-tldrs tagged_dataset_tldrs.hypo \
     --tagged-positives-file tagged_dataset_positives.jsonl \
     --tagged-negatives-file tagged_dataset_negatives.jsonl \
     --negative-mining hard \

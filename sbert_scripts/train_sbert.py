@@ -46,7 +46,7 @@ def construct_model(base_model, encoder_style):
         model = SentenceTransformer(base_model)
         train_loss = losses.CosineSimilarityLoss(model)
     elif encoder_style == CROSSENCODER:
-        model = CrossEncoder(base_model, num_labels=2)
+        model = CrossEncoder(base_model, num_labels=1, max_length=512)
         train_loss = None
     return model, train_loss
 
