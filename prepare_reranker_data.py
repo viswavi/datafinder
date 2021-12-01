@@ -3,15 +3,16 @@ python prepare_reranker_data.py \
     --tagged-datasets-file tagged_datasets_merged_hard_negatives.jsonl \
     --search-collection dataset_search_collection.jsonl \
     --tokenizer-name allenai/scibert_scivocab_uncased \
-    --output-training-data reranker_data/training_data_merged_negatives.json \
-    --output-qid2query reranker_data/qid2query.json
+    --output-dir reranker_data \
+    --output-training-data-prefix data \
+    --output-qid2query qid2query.json
 '''
 
 import argparse
 from collections import defaultdict
 import json
-import jsonlines
 import os
+import random
 from transformers import AutoTokenizer
 
 from prepare_tevatron_data import generate_doc_ids, load_rows
@@ -20,9 +21,12 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--tagged-datasets-file', required=True, type=str, default="tagged_datasets_merged_hard_negatives.jsonl")
 parser.add_argument('--search-collection', required=True, type=str, default="dataset_search_collection.jsonl")
 parser.add_argument('--tokenizer-name', required=True, type=str, default="allenai/scibert_scivocab_uncased")
-parser.add_argument('--output-training-data', required=True, type=str, default="reranker_data/training_data_merged_negatives.json")
-parser.add_argument('--output-qid2query', required=True, type=str, default="reranker_data/qid2query.json")
+parser.add_argument('--output-dir', required=True, type=str, default="reranker_data")
+parser.add_argument('--output-training-data-prefix', required=True, type=str, default="data")
+parser.add_argument('--output-qid2query', required=True, type=str, default="qid2query.json")
 parser.add_argument('--max-length', type=int, default=512)
+parser.add_argument('--seed', type=int, default=2021)
+parser.add_argument('--validation-split', type=float, default=0.1)
 
 def generate_training_instances(training_set, doc2idx, idx2text, max_length):
     '''
@@ -39,7 +43,7 @@ def generate_training_instances(training_set, doc2idx, idx2text, max_length):
 
     for instance in training_set:
         qry = instance["tldr"]
-        qid = instance["paper_id"]
+        qid = "paper_id_" + instance["paper_id"]
         qid2query[qid] = qry
 
         query_dict = {
@@ -79,15 +83,23 @@ if __name__ == "__main__":
 
     query_2_pos_docs, query_2_neg_docs, queries, qid2query = generate_training_instances(tagged_datasets, dataset2id, id2dataset, args.max_length)
 
-    with open(args.output_training_data, 'w') as f:
-        for qid in queries.keys():
-            item_set = {
-                'qry': queries[qid],
-                'pos': list(query_2_pos_docs[qid].values()),
-                'neg': query_2_neg_docs[qid],
-            }
-            f.write(json.dumps(item_set) + '\n')
+    query_ids = list(queries.keys())
+    rng = random.Random(args.seed)
+    train_query_ids = rng.sample(query_ids, k=int(len(query_ids) * args.validation_split))
+    validation_query_ids = [k for k in query_ids if k not in train_query_ids]
+    rng.shuffle(validation_query_ids)
+    split_query_ids = [train_query_ids, validation_query_ids]
 
-
-    with open(args.output_qid2query, 'w') as f:
-        json.dump(qid2query, f)
+    for split_idx, split_name in enumerate(["train", "dev"]):
+        os.makedirs(os.path.join(args.output_dir, split_name), exist_ok=True)
+        split_file = os.path.join(args.output_dir, split_name, args.output_training_data_prefix + "_" + split_name + ".json")
+        with open(split_file, 'w') as f:
+            for qid in split_query_ids[split_idx]:
+                item_set = {
+                    'qry': queries[qid],
+                    'pos': list(query_2_pos_docs[qid].values()),
+                    'neg': query_2_neg_docs[qid],
+                }
+                f.write(json.dumps(item_set) + '\n')
+        with open(os.path.join(args.output_dir, args.output_qid2query), 'w') as f:
+            json.dump(qid2query, f)

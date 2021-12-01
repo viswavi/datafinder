@@ -1,7 +1,6 @@
 '''
 python sbert_scripts/generate_sbert_predictions_crossencoder.py \
     --crossencoder-model-directory sbert_models/bert_hard_negatives \
-    --biencoder-model-directory sbert_models/bert_hard_negatives \
     --biencoder_query_reps /projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_data/test_queries_hard_negatives_longer_input_scibert/query.pt \
     --biencoder_passage_reps /projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_data/search_encoded_hard_negatives_longer_input_scibert/*.pt \
     --search-collection dataset_search_collection.jsonl \
@@ -82,7 +81,7 @@ def do_first_stage_retrieval(query_reps, passage_reps, depth=100, batch_size=128
 if __name__ == "__main__":
     args = parser.parse_args()
 
-    all_scores, psg_indices = do_first_stage_retrieval(args.query_reps, args.passage_reps, depth=args.first_stage_depth, batch_size=args.first_stage_batch_size)
+    all_scores, psg_indices = do_first_stage_retrieval(args.biencoder_query_reps, args.biencoder_passage_reps, depth=args.first_stage_depth, batch_size=args.first_stage_batch_size)
 
 
 
