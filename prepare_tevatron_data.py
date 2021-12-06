@@ -4,13 +4,17 @@ python prepare_tevatron_data.py \
     --search-collection dataset_search_collection.jsonl \
     --test-queries scirex_queries_and_datasets.json \
     --output-training-directory tevatron_data/training_raw_hard_negatives_sep \
-    --output-search-directory tevatron_data/search_raw_sep
+    --output-search-directory tevatron_data/search_raw_sep \
+    --output-query-file tevatron_data/test_queries_with_prefixes.jsonl
 '''
 
 import argparse
 import json
 import jsonlines
 import os
+from tqdm import tqdm
+
+from extract_methods_tasks_from_pwc import add_prompt_to_description, parse_tasks_from_evaluation_tables_file, parse_methods_from_methods_file
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output-training-directory', type=str, default="tevatron_data/training_raw")
@@ -21,6 +25,8 @@ parser.add_argument('--num-shards', type=int, default=1, help="Number of shards 
 parser.add_argument('--test-queries', type=str, default="scirex_queries_and_datasets.json")
 parser.add_argument('--tagged-datasets-file', type=str, default="tagged_datasets_merged_random_negatives.jsonl")
 parser.add_argument('--search-collection', type=str, default="dataset_search_collection.jsonl")
+parser.add_argument('--evaluation-tables-file', type=str, default=None, help="Path to the evaluation-tables.json file")
+parser.add_argument('--methods-file', type=str, default=None, help="Path to the methods.json file")
 
 def format_search_text(row, separator=" [SEP] "):
     return separator.join([get_key_if_not_none(row, "contents"), get_key_if_not_none(row, "title"), get_key_if_not_none(row, "abstract")])
@@ -47,28 +53,34 @@ def write_rows(rows, outfile):
         writer.write_all(rows)
     print(f"Wrote {len(rows)} rows to {outfile}.")
 
-def generate_training_instances(training_set, doc2idx, idx2text):
+def generate_training_instances(training_set, doc2idx, idx2text, tasks=None, methods=None):
     '''
     Each line should look like
     {'query': TEXT_TYPE, 'positives': List[TEXT_TYPE], 'negatives': List[TEXT_TYPE]}
     '''
     training_rows = []
-    for instance in training_set:
+    for instance in tqdm(training_set):
         positives = [idx2text[doc2idx[pos]] for pos in instance["positives"]]
         negatives = [idx2text[doc2idx[neg]] for neg in instance["negatives"]]
-        training_rows.append({'query': instance["tldr"], "positives": positives, "negatives": negatives})
+        query = instance["tldr"]
+        if tasks is not None and methods is not None:
+            query = add_prompt_to_description(query, tasks, methods)
+        training_rows.append({'query': query, "positives": positives, "negatives": negatives})
     return training_rows
 
-def format_query_file(test_query_file, doc2idx):
+def format_query_file(test_query_file, doc2idx, tasks=None, methods=None):
     '''
     Each line should look like
     {"text_id": xxx, "text": TEXT_TYPE}
     '''
     formatted_queries = []
-    for i, row in enumerate(json.load(open(test_query_file))):
+    for i, row in tqdm(enumerate(json.load(open(test_query_file)))):
         dataset_idxs = [doc2idx[dataset] for dataset in row["documents"]]
         # formatted_queries.append({"text_id": dataset_idxs[0], "text": row["query"]})
-        formatted_queries.append({"text_id": str(i), "text": row["query"]})
+        query = row["query"]
+        if tasks is not None and methods is not None:
+            query = add_prompt_to_description(query, tasks, methods)
+        formatted_queries.append({"text_id": str(i), "text": query})
     return formatted_queries
 
 def get_key_if_not_none(map, key):
@@ -98,13 +110,21 @@ if __name__ == "__main__":
     search_collection = load_rows(args.search_collection)
     dataset2id, id2dataset, id2text = generate_doc_ids(search_collection)
 
-    test_queries = format_query_file(args.test_queries, dataset2id)
+    if args.evaluation_tables_file is None or args.methods_file is None:
+        tasks = None
+        methods = None
+    else:
+        tasks = parse_tasks_from_evaluation_tables_file(args.evaluation_tables_file)
+        methods = parse_methods_from_methods_file(args.methods_file)
+
+
+    test_queries = format_query_file(args.test_queries, dataset2id, tasks, methods)
     write_rows(test_queries, os.path.join(args.output_query_file))
 
     search_rows = generate_inference_instances(search_collection, dataset2id)
 
     tagged_datasets = load_rows(args.tagged_datasets_file)
-    training_rows = generate_training_instances(tagged_datasets, dataset2id, id2text)
+    training_rows = generate_training_instances(tagged_datasets, dataset2id, id2text, tasks, methods)
     write_rows(training_rows, os.path.join(args.output_training_directory, "train_data.json"))
     
     shards = []

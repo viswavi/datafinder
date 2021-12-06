@@ -39,5 +39,10 @@ if __name__ == "__main__":
                 continue
             query_datasets[query_idx].add(docid)
             query = test_queries[query_idx]["text"]
-            query_id = "_".join(query.split())
+
+            if "[SEP]" in query:
+                query_id = "_".join(query.split("[SEP] ")[-1].split())
+            else:
+                query_id = "_".join(query.split())
+
             tsv_writer.writerow([query_id, "Q0", docid, str(len(query_datasets[query_idx])), score, "run-1"])
