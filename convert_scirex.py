@@ -1,7 +1,7 @@
 '''
 python convert_scirex.py \
     --scirex-directory /projects/ogma1/vijayv/SciREX/scirex_dataset/release_data/ \
-    --dataset-search-collection  dataset_search_collection.jsonl \
+    --dataset-search-collection dataset_search_collection.jsonl \
     --datasets-file datasets.json \
     --scirex-to-s2orc-metadata-file /home/vijayv/pickle_backups/scirex_id_to_s2orc_metadata_with_tldrs.pkl \
     --output-relevance-file data/test/test_dataset_collection.qrels \
@@ -152,13 +152,14 @@ if __name__ == "__main__":
                 if not mismatch_accepted:
                     continue
             query_writer.write(tldr + "\n")
+            year = scirex_to_s2orc_metadata[doc["doc_id"]]["year"]
             query_id = "_".join(tldr.split())
             for dataset in dataset_tags:
                 docid = "_".join(dataset.split())
                 tsv_writer.writerow([query_id, "Q0", docid, "1"])
             num_rows_written += 1
 
-            row = {"query": tldr, "documents": sorted(dataset_tags)}
+            row = {"query": tldr, "documents": sorted(dataset_tags), "year": year}
             queries_and_datasets.append(row)
     query_writer.close()
     relevance_file.close()

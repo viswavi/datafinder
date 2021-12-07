@@ -16,6 +16,8 @@ import gzip
 import json
 import jsonlines
 import os
+import requests
+import time
 from tqdm import tqdm
 
 parser = argparse.ArgumentParser()
@@ -63,6 +65,12 @@ def construct_dataset_to_variants_mapping(pwc_datasets_metadata):
         dataset_variants_mapping[dataset["name"]] = dataset.get("variants", "")
     return dataset_variants_mapping
 
+def construct_dataset_to_date_mapping(pwc_datasets_metadata):
+    dataset_date_mapping = {}
+    for dataset in pwc_datasets_metadata:
+        dataset_date_mapping[dataset["name"]] = dataset.get("introduced_date", None)
+    return dataset_date_mapping
+
 def construct_dataset_document_collection(jsonl_writer,
                                           dataset_s2orc_id_mapping,
                                           pwc_datasets_metadata,
@@ -72,6 +80,7 @@ def construct_dataset_document_collection(jsonl_writer,
                                           exclude_full_text):
     dataset_to_descriptions = construct_dataset_to_description_mapping(pwc_datasets_metadata)
     dataset_to_variants = construct_dataset_to_variants_mapping(pwc_datasets_metadata)
+    dataset_to_date = construct_dataset_to_date_mapping(pwc_datasets_metadata)
     paper_title_to_datasets_map, paper_url_to_datasets_map = construct_paper_info_to_dataset_mapping(pwc_datasets_metadata)
     dataset_to_paper_title_map = {dataset:title for title, dataset in paper_title_to_datasets_map.items()}
 
@@ -123,9 +132,13 @@ def construct_dataset_document_collection(jsonl_writer,
             dataset_document["variants"] = dataset_to_variants[dataset_name]
             dataset_document["title"] = metadata[paper_id]["title"]
             dataset_document["abstract"] = metadata[paper_id]["abstract"]
+            dataset_document["year"] = metadata[paper_id]["year"]
+            if dataset_name in dataset_to_date and dataset_to_date[dataset_name] is not None:
+                dataset_document["date"] = dataset_to_date[dataset_name]
             section_texts = [section["text"] for section in doc["body_text"]]
             body_text = "\n".join(section_texts)
             dataset_document["body_text"] = body_text
+
             matched_datasets.add(dataset_name)
             if exclude_abstract:
                 del dataset_document["abstract"]
@@ -148,6 +161,9 @@ def construct_dataset_document_collection(jsonl_writer,
                 dataset_document["title"] = ""
             dataset_document["contents"] = dataset_to_descriptions[dataset_name]
             dataset_document["variants"] = dataset_to_variants[dataset_name]
+            if dataset_name in dataset_to_date and dataset_to_date[dataset_name] is not None:
+                dataset_document["date"] = dataset_to_date[dataset_name]
+                dataset_document["year"] = int(dataset_to_date[dataset_name].split('-')[0])
             if not exclude_abstract:
                 dataset_document["abstract"] = ""
             if not exclude_full_text:
