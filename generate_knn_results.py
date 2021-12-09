@@ -87,19 +87,22 @@ def preprocess_text(query, remove_function_words=False, remove_punctuation=False
         query = " ".join(non_stopwords)
     return query
 
-def construct_scibert_vectorizer(device=3):
+def construct_scibert_vectorizer(device=2):
     model = "allenai/scibert_scivocab_uncased"
     feature_extractor = pipeline('feature-extraction', model=model, tokenizer=model, device=device)
     return feature_extractor
 
 
-def vectorize_text(text_lines, vectorizer, vectorizer_type):
+def vectorize_text(text_lines, vectorizer, vectorizer_type, batch_size=400):
     start = time.perf_counter()
     if vectorizer_type == "tfidf":
         vectorized_text_sparse = vectorizer.transform(text_lines)
         vectorized_text = np.array(vectorized_text_sparse.todense())
     elif vectorizer_type == "bert":
-        bert_vectors = vectorizer(text_lines)
+        bert_vectors = []
+        for batch_idx in range(int(np.ceil(len(text_lines) / batch_size))):
+            batch_bert_vectors = vectorizer(text_lines[batch_idx*batch_size:(batch_idx+1)*batch_size])
+            bert_vectors.extend(batch_bert_vectors)
         vectorized_text = np.array([v[0] for v in bert_vectors])
     else:
         raise ValueError(f"Unsupported vectorizer type supplied: {vectorizer_type}")
@@ -107,7 +110,7 @@ def vectorize_text(text_lines, vectorizer, vectorizer_type):
     print(f"Vectorizing {len(text_lines)} lines took {round(end-start, 4)} seconds.")
     return vectorized_text
 
-def prepare_training_set(training_set, training_tldrs, vectorizer_type="tfidf", overwrite_cache=False, remove_function_words=False, remove_punctuation=False, lowercase_query=False, remove_stopwords=False):
+def prepare_training_set(training_set, training_tldrs, vectorizer_type="tfidf", overwrite_cache=True, remove_function_words=False, remove_punctuation=False, lowercase_query=False, remove_stopwords=False):
     TRAINING_SET_CACHE = os.path.join(PICKLE_CACHES_DIR, vectorizer_type + "_vectorized_data.pkl")
     VECTORIZER_CACHE = os.path.join(PICKLE_CACHES_DIR, vectorizer_type + "_vectorizer.pkl")
     assert vectorizer_type in ["tfidf", "bert"]
@@ -171,8 +174,7 @@ def knn_search(query_text, query_metadata, dataset_metadata, query_vectors, fais
         if combiner == "exact_top":
             for i, score in enumerate(knn_distances[row_idx]):
                 for d in datasets_list[knn_indices[row_idx][i]]:
-                    document_year = dataset_metadata[d]["year"]
-                    if query_year >= document_year:
+                    if not ("year" in dataset_metadata[d] and query_year < dataset_metadata[d]["year"]):
                         hits.append(SearchResult(d, score))
                 if len(hits) >= num_results:
                     break
@@ -185,8 +187,7 @@ def knn_search(query_text, query_metadata, dataset_metadata, query_vectors, fais
             for idx in range(len(knn_indices[row_idx])):
                 score = reverse_normalized_distances[idx]
                 for d in datasets_list[idx]:
-                    document_year = dataset_metadata[d]["year"]
-                    if query_year >= document_year:
+                    if not ("year" in dataset_metadata[d] and query_year < dataset_metadata[d]["year"]):
                         dataset_weighted_scores[d] += score
             top_hit_idxs = np.argsort(-np.array(list(dataset_weighted_scores.values())))[:num_results]
             for idx in top_hit_idxs:
