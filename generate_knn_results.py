@@ -2,6 +2,7 @@
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
+    --query-metadata data/test/scirex_queries_and_datasets.json \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs tagged_dataset_tldrs.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
@@ -12,6 +13,7 @@ python generate_knn_results.py \
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
+    --query-metadata data/test/scirex_queries_and_datasets.json \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs tagged_dataset_tldrs.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
@@ -22,6 +24,7 @@ python generate_knn_results.py \
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
+    --query-metadata data/test/scirex_queries_and_datasets.json \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs tagged_dataset_tldrs.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
@@ -33,6 +36,7 @@ python generate_knn_results.py \
 import argparse
 from collections import defaultdict
 import csv
+import json
 import jsonlines
 import numpy as np
 import os
@@ -150,22 +154,28 @@ def combine_hits(hits: List[SearchResult]) -> List[SearchResult]:
     final_hits = sorted(final_hits, key=lambda result: result.score, reverse=True)
     return final_hits
 
-def knn_search(query_text, query_vectors, faiss_index, training_data, combiner="weighted", num_results=4):
+def knn_search(query_text, query_metadata, dataset_metadata, query_vectors, faiss_index, training_data, combiner="weighted", num_results=4):
     start = time.perf_counter()
     datasets_list = [datasets for _, datasets in training_data]
 
     if combiner == "exact_top":
-        knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), num_results)
+        knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), num_results * 10)
     else:
         knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), 10)
 
     all_hits = []
     for row_idx in range(len(query_vectors)):
+        query_meta = query_metadata[row_idx]
+        query_year = query_meta["year"]
         hits = []
         if combiner == "exact_top":
             for i, score in enumerate(knn_distances[row_idx]):
                 for d in datasets_list[knn_indices[row_idx][i]]:
-                    hits.append(SearchResult(d, score))
+                    document_year = dataset_metadata[d]["year"]
+                    if query_year >= document_year:
+                        hits.append(SearchResult(d, score))
+                if len(hits) >= num_results:
+                    break
         elif combiner == "weighted":
             dataset_weighted_scores = defaultdict(float)
 
@@ -175,7 +185,9 @@ def knn_search(query_text, query_vectors, faiss_index, training_data, combiner="
             for idx in range(len(knn_indices[row_idx])):
                 score = reverse_normalized_distances[idx]
                 for d in datasets_list[idx]:
-                    dataset_weighted_scores[d] += score
+                    document_year = dataset_metadata[d]["year"]
+                    if query_year >= document_year:
+                        dataset_weighted_scores[d] += score
             top_hit_idxs = np.argsort(-np.array(list(dataset_weighted_scores.values())))[:num_results]
             for idx in top_hit_idxs:
                 d = list(dataset_weighted_scores.keys())[idx]
@@ -203,6 +215,7 @@ if __name__ == "__main__":
     parser.add_argument("--training-tldrs", type=str, default="tagged_dataset_tldrs.hypo")
     parser.add_argument("--test-set", type=str, default="data/test/test_dataset_collection.jsonl", help="Test collection of queries and documents")
     parser.add_argument('--test_queries', type=str, default="data/test/test_queries.csv", help="List of newline-delimited queries")
+    parser.add_argument('--query-metadata', type=str, default="data/test/scirex_queries_and_datasets.json")
     parser.add_argument('--output-file', type=str, default="data/test/retrieved_documents.trec", help="Retrieval file, in TREC format")
     parser.add_argument('--search-collection', type=str, default="dataset_search_collection/documents.jsonl")
     parser.add_argument('--remove-function-words', action="store_true")
@@ -216,6 +229,9 @@ if __name__ == "__main__":
 
     training_set = list(jsonlines.open(args.training_set))
     training_set_tldrs = open(args.training_tldrs).read().split("\n")[:-1]
+
+    query_metadata = json.load(open(args.query_metadata))
+    search_collection = list(jsonlines.open(args.search_collection))
 
     vectorized_training_data, vectorizer = prepare_training_set(training_set,
                                                                 training_set_tldrs,
@@ -247,7 +263,12 @@ if __name__ == "__main__":
         for i, query_text in enumerate(test_queries):
             query_vectors.append(vectorized_queries[i])
         query_vectors = np.array(query_vectors, dtype=np.float32)
-        all_hits = knn_search(test_queries, query_vectors, faiss_index, vectorized_training_data, combiner=args.knn_aggregator)
+
+        dataset_metadata = {}
+        for row in search_collection:
+            dataset_metadata[row["id"]] = row
+
+        all_hits = knn_search(test_queries, query_metadata, dataset_metadata, query_vectors, faiss_index, vectorized_training_data, combiner=args.knn_aggregator)
         previous_hits = set()
         for query_idx, hits in enumerate(all_hits):
             query = test_queries[query_idx]
