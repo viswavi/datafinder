@@ -151,8 +151,8 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
         print(f"{num_documents_written} documents written to file so far.")
 
 
-def main():
-    args = parser.parse_args()
+
+
 
     pwc_datasets_file = "datasets.json"
     pwc_datasets = json.load(open(pwc_datasets_file))
