@@ -1,8 +1,23 @@
+'''
+python convert_scirex.py \
+    --scirex-directory /projects/ogma1/vijayv/SciREX/scirex_dataset/release_data/ \
+    --dataset-search-collection dataset_search_collection.jsonl \
+    --datasets-file datasets.json \
+    --scirex-to-s2orc-metadata-file /home/vijayv/pickle_backups/scirex_id_to_s2orc_metadata_with_tldrs.pkl \
+    --output-relevance-file data/test/test_dataset_collection.qrels \
+    --output-queries-file data/test/test_queries.csv \
+    --output-combined-file data/test/scirex_queries_and_datasets.json \
+    --training-set-documents tagged_dataset_positives.jsonl
+'''
+
 import argparse
 import csv
+import json
 import jsonlines
 import os
 import pickle
+
+from collections import Counter
 
 
 def transformed_document(doc):
@@ -20,9 +35,12 @@ if __name__ == "__main__":
     parser.add_argument('--datasets-file', type=str, default="datasets.json", help="JSON file containing metadata about all datasets on PapersWithCode")
     parser.add_argument('--scirex-to-s2orc-metadata-file', type=str, help="Pickle file containing mapping (with tldrs) from SciREX paper IDs to S2ORC metadata", default="/home/vijayv/pickle_backups/scirex_id_to_s2orc_metadata_with_tldrs.pkl")
     parser.add_argument('--output-relevance-file', type=str, default="data/test/test_dataset_collection.qrels")
-    parser.add_argument('--output-queries-file', type=str, default="data/test/test_queries.csv")
+    parser.add_argument('--output-queries-file', type=str, default="data/test/test_queries.json")
+    parser.add_argument('--output-combined-file', type=str, default="data/test/scirex_queries_and_datasets.json")
+    parser.add_argument('--training-set-documents', type=str, default="tagged_datasets.jsonl")
 
     args = parser.parse_args()
+    
 
     dataset_search_collection = list(jsonlines.open(args.dataset_search_collection))
     variant_to_dataset_mapping = {}
@@ -42,9 +60,24 @@ if __name__ == "__main__":
     tsv_writer.writerow(["QueryID", "0", "DocID", "Relevance"])
     query_writer = open(args.output_queries_file, 'w')
 
+    training_set_tags = list(jsonlines.open(args.training_set_documents))
+    tagged_datasets = [tag for document in training_set_tags for tag in document["datasets"]]
+    tag_counts = Counter(tagged_datasets)
+    rare_datasets = set()
+    cumulative_count = 0
+    least_common_dataset_counts = tag_counts.most_common()[-int(0.8 * len(tag_counts)):]
+    for doc, count in least_common_dataset_counts:
+        rare_datasets.add(doc)
+        cumulative_count += count
+    print(f"{round(len(rare_datasets) / float(len(tag_counts)) * 100, 2)}% most rare datasets make up only {round(cumulative_count/ float(len(tagged_datasets)) * 100, 2)}% of mentions")
+
     mismatches_cache = {}
 
+    documents_containing_rare_datasets = 0
+    total_rare_datasets_in_test_set = 0
     num_rows_written = 0
+
+    queries_and_datasets = []
     for file in os.listdir(args.scirex_directory):
         if file.startswith(".") or not file.endswith(".jsonl"):
             continue
@@ -100,6 +133,9 @@ if __name__ == "__main__":
             dataset_tags = list(set(dataset_tags))
             if len(dataset_tags) == 0:
                 continue
+            if len(set(dataset_tags).intersection(rare_datasets)) > 0:
+                documents_containing_rare_datasets += 1
+                total_rare_datasets_in_test_set += len(set(dataset_tags).intersection(rare_datasets))
             if doc["doc_id"] not in scirex_to_s2orc_metadata:
                 continue
             tldr = scirex_to_s2orc_metadata[doc["doc_id"]]["tldr"]
@@ -109,22 +145,31 @@ if __name__ == "__main__":
                 print(f"Possible dataset mismatch found: {list(set(dataset_tags))} vs {list(set(datasets_labeled))}")
                 print("Is this mismatch ok? Y/n")
                 mismatch_accepted = True
-                # mismatch_accepted = input_y_n()
-                # mismatches_cache[tuple(tuple(set(dataset_tags)), tuple(set(datasets_labeled)))] = y_n
+                '''
+                mismatch_accepted = input_y_n()
+                mismatches_cache[tuple([tuple(set(dataset_tags)), tuple(set(datasets_labeled))])] = mismatch_accepted
+                '''
                 if not mismatch_accepted:
                     continue
             query_writer.write(tldr + "\n")
+            year = scirex_to_s2orc_metadata[doc["doc_id"]]["year"]
             query_id = "_".join(tldr.split())
             for dataset in dataset_tags:
                 docid = "_".join(dataset.split())
                 tsv_writer.writerow([query_id, "Q0", docid, "1"])
             num_rows_written += 1
 
-            row = {"query": tldr, "documents": sorted(dataset_tags)}
+            row = {"query": tldr, "documents": sorted(dataset_tags), "year": year}
+            queries_and_datasets.append(row)
     query_writer.close()
     relevance_file.close()
 
     print(f"Wrote {num_rows_written} test documents to {args.output_relevance_file}")
+
+    json.dump(queries_and_datasets, open(args.output_combined_file, 'w'))
+    print(f"Wrote {num_rows_written} test documents to {args.output_combined_file}")
+
+    print(f"{documents_containing_rare_datasets} test set documents contain rare datasets, giving an average of {round(float(total_rare_datasets_in_test_set) / documents_containing_rare_datasets, 2)} rare datasets per test set document.")
     # pickle.dump(mismatches_cache, open("dataset_mismatches_cache.pkl", 'wb'))
 
     # Fields:

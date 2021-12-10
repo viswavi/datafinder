@@ -2,17 +2,19 @@
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --training-set tagged_datasets.jsonl \
+    --query-metadata data/test/scirex_queries_and_datasets.json \
+    --training-set tagged_dataset_positives.jsonl \
     --training-tldrs tagged_dataset_tldrs.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
-    --output-file data/test/retrieved_documents_knn_exact_tfidf.trec \
+    --output-file data/test/retrieved_documents_knn_exact_longer_input_tfidf.trec \
     --vectorizer-type tfidf \
     --knn-aggregator exact_top
 
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --training-set tagged_datasets.jsonl \
+    --query-metadata data/test/scirex_queries_and_datasets.json \
+    --training-set tagged_dataset_positives.jsonl \
     --training-tldrs tagged_dataset_tldrs.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
     --output-file data/test/retrieved_documents_knn_weighted.trec \
@@ -22,7 +24,8 @@ python generate_knn_results.py \
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --training-set tagged_datasets.jsonl \
+    --query-metadata data/test/scirex_queries_and_datasets.json \
+    --training-set tagged_dataset_positives.jsonl \
     --training-tldrs tagged_dataset_tldrs.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
     --output-file data/test/retrieved_documents_knn_exact_bert.trec \
@@ -33,6 +36,7 @@ python generate_knn_results.py \
 import argparse
 from collections import defaultdict
 import csv
+import json
 import jsonlines
 import numpy as np
 import os
@@ -83,27 +87,30 @@ def preprocess_text(query, remove_function_words=False, remove_punctuation=False
         query = " ".join(non_stopwords)
     return query
 
-def construct_scibert_vectorizer(device=3):
+def construct_scibert_vectorizer(device=2):
     model = "allenai/scibert_scivocab_uncased"
     feature_extractor = pipeline('feature-extraction', model=model, tokenizer=model, device=device)
     return feature_extractor
 
 
-def vectorize_text(text_lines, vectorizer, vectorizer_type):
+def vectorize_text(text_lines, vectorizer, vectorizer_type, batch_size=400):
     start = time.perf_counter()
     if vectorizer_type == "tfidf":
         vectorized_text_sparse = vectorizer.transform(text_lines)
         vectorized_text = np.array(vectorized_text_sparse.todense())
     elif vectorizer_type == "bert":
-        bert_vectors = vectorizer(text_lines)
-        vectorized_text = np.array([v[0][0] for v in bert_vectors])
+        bert_vectors = []
+        for batch_idx in range(int(np.ceil(len(text_lines) / batch_size))):
+            batch_bert_vectors = vectorizer(text_lines[batch_idx*batch_size:(batch_idx+1)*batch_size])
+            bert_vectors.extend(batch_bert_vectors)
+        vectorized_text = np.array([v[0] for v in bert_vectors])
     else:
         raise ValueError(f"Unsupported vectorizer type supplied: {vectorizer_type}")
     end = time.perf_counter()
     print(f"Vectorizing {len(text_lines)} lines took {round(end-start, 4)} seconds.")
     return vectorized_text
 
-def prepare_training_set(training_set, training_tldrs, vectorizer_type="tfidf", overwrite_cache=False, remove_function_words=False, remove_punctuation=False, lowercase_query=False, remove_stopwords=False):
+def prepare_training_set(training_set, training_tldrs, vectorizer_type="tfidf", overwrite_cache=True, remove_function_words=False, remove_punctuation=False, lowercase_query=False, remove_stopwords=False):
     TRAINING_SET_CACHE = os.path.join(PICKLE_CACHES_DIR, vectorizer_type + "_vectorized_data.pkl")
     VECTORIZER_CACHE = os.path.join(PICKLE_CACHES_DIR, vectorizer_type + "_vectorizer.pkl")
     assert vectorizer_type in ["tfidf", "bert"]
@@ -150,9 +157,11 @@ def combine_hits(hits: List[SearchResult]) -> List[SearchResult]:
     final_hits = sorted(final_hits, key=lambda result: result.score, reverse=True)
     return final_hits
 
-def knn_search(knn_distances, knn_indices, datasets_list, combiner="exact_top", num_results=4):
+def knn_search(knn_distances, knn_indices, datasets_list, query_metadata, dataset_metadata, combiner="exact_top", num_results=4):
     all_hits = []
     for row_idx in range(len(knn_distances)):
+        query_meta = query_metadata[row_idx]
+        query_year = query_meta["year"]
         hits = []
         if combiner == "exact_top":
             for i, score in enumerate(knn_distances[row_idx][:num_results]):
@@ -171,12 +180,12 @@ def knn_search(knn_distances, knn_indices, datasets_list, combiner="exact_top", 
             for idx in top_hit_idxs:
                 d = list(dataset_weighted_scores.keys())[idx]
                 score = list(dataset_weighted_scores.values())[idx]
-                hits.append(SearchResult(d, score))
+                if not ("year" in dataset_metadata[d] and query_year < dataset_metadata[d]["year"]):
+                    hits.append(SearchResult(d, score))
         else:
             raise ValueError("invalid KNN combiner given")
         all_hits.append(combine_hits(hits))
     return all_hits
-
 
 def construct_faiss_index(vectorized_training_data):
     vectors = np.array([row[0] for row in vectorized_training_data], dtype=np.float32)
@@ -212,6 +221,7 @@ if __name__ == "__main__":
     parser.add_argument("--training-tldrs", type=str, default="tagged_dataset_tldrs.hypo")
     parser.add_argument("--test-set", type=str, default="data/test/test_dataset_collection.jsonl", help="Test collection of queries and documents")
     parser.add_argument('--test_queries', type=str, default="data/test/test_queries.csv", help="List of newline-delimited queries")
+    parser.add_argument('--query-metadata', type=str, default="data/test/scirex_queries_and_datasets.json")
     parser.add_argument('--output-file', type=str, default="data/test/retrieved_documents.trec", help="Retrieval file, in TREC format")
     parser.add_argument('--search-collection', type=str, default="dataset_search_collection/documents.jsonl")
     parser.add_argument('--remove-function-words', action="store_true")
@@ -225,6 +235,9 @@ if __name__ == "__main__":
 
     training_set = list(jsonlines.open(args.training_set))
     training_set_tldrs = open(args.training_tldrs).read().split("\n")[:-1]
+
+    query_metadata = json.load(open(args.query_metadata))
+    search_collection = list(jsonlines.open(args.search_collection))
 
     vectorized_training_data, vectorizer = prepare_training_set(training_set,
                                                                 training_set_tldrs,
@@ -254,10 +267,18 @@ if __name__ == "__main__":
     query_vectors = np.array(query_vectors, dtype=np.float32)
     dataset_ids = [datasets for _, datasets in vectorized_training_data]
 
+    query_metadata = {}
+    for row in json.load(open(args.query_metadata)):
+        query_metadata[row["query"]] = row
+
+    dataset_metadata = {}
+    for row in search_collection:
+        dataset_metadata[row["id"]] = row
+
     if args.combiner == "exact_top":
         knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), args.num_results)
     else:
         knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), 10)
-    all_hits = knn_search(knn_distances, knn_indices, dataset_ids, combiner=args.knn_aggregator, num_results=args.results_limit)
+    all_hits = knn_search(knn_distances, knn_indices, dataset_ids, query_metadata, dataset_metadata, combiner=args.knn_aggregator, num_results=args.results_limit)
 
     write_hits_to_tsv(args.output_file, all_hits, test_queries, args.results_limit)
