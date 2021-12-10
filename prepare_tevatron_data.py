@@ -80,7 +80,7 @@ def format_query_file(test_query_file, doc2idx, tasks=None, methods=None):
         query = row["query"]
         if tasks is not None and methods is not None:
             query = add_prompt_to_description(query, tasks, methods)
-        formatted_queries.append({"text_id": str(i), "text": query})
+        formatted_queries.append({"text_id": str(i), "text": query, "year": row["year"]})
     return formatted_queries
 
 def get_key_if_not_none(map, key):
