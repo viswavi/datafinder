@@ -1,5 +1,5 @@
 '''
-python evaluate_rare_dataset_recall.py \
+python evaluate_dataset_recall_buckets.py \
 /projects/ogma1/vijayv/dataset-recommendation/data/test/test_dataset_collection.qrels \
 /projects/ogma1/vijayv/dataset-recommendation/data/test/retrieved_documents_knn_weighted.trec
 '''
@@ -10,16 +10,19 @@ import csv
 import jsonlines
 import numpy as np
 
-def construct_rare_dataset_list(training_set_tags):
+def construct_quintile_dataset_lists(training_set_tags, training_frequency_buckets):
+    bucket_lists = []
     tagged_datasets = [tag for document in training_set_tags for tag in document["datasets"]]
     tag_counts = Counter(tagged_datasets)
-    rare_datasets = set()
-    cumulative_count = 0
-    least_common_dataset_counts = tag_counts.most_common()[-int(0.8 * len(tag_counts)):]
-    for dataset, count in least_common_dataset_counts:
-        rare_datasets.add("_".join(dataset.split()))
-        cumulative_count += count
-    return rare_datasets
+
+    for frequency_bucket in training_frequency_buckets:
+        bucket_start, bucket_end = frequency_bucket
+        datasets_in_bucket = set()
+        for dataset, frequency in tag_counts.most_common():
+            if frequency >= bucket_start and frequency <= bucket_end:
+                datasets_in_bucket.add("_".join(dataset.split()))
+        bucket_lists.append(list(datasets_in_bucket))
+    return bucket_lists
 
 def read_relevant_csv(f):
     queries = defaultdict(list)
@@ -75,6 +78,9 @@ if __name__ == "__main__":
     retrieved_csv = read_retrieved_csv(args.retrieved_trec_file)
 
     training_set_tags = list(jsonlines.open(args.training_set_documents))
-    rare_datasets = construct_rare_dataset_list(training_set_tags)
-    rare_dataset_recall = compute_average_rare_dataset_recall(relevant_csv, retrieved_csv, rare_datasets)
-    print(f"rare_dataset_recall: {rare_dataset_recall}")
+
+    training_frequency_buckets = [(501, 2500), (101, 500), (51, 100), (21, 50), (6, 21), (1, 5)]
+    all_bucket_datasets = construct_quintile_dataset_lists(training_set_tags, training_frequency_buckets)
+    for bucket_idx, bucket_datasets in enumerate(all_bucket_datasets):
+        rare_dataset_recall = compute_average_rare_dataset_recall(relevant_csv, retrieved_csv, bucket_datasets)
+        print(f"Recall in bucket {training_frequency_buckets[bucket_idx]}: {rare_dataset_recall}")
