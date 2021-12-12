@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
     training_set_tags = list(jsonlines.open(args.training_set_documents))
 
-    training_frequency_buckets = [(501, 2500), (101, 500), (51, 100), (21, 50), (6, 21), (1, 5)]
+    training_frequency_buckets = [(501, 2500), (101, 500), (51, 100), (21, 50), (6, 20), (1, 5)]
     all_bucket_datasets = construct_quintile_dataset_lists(training_set_tags, training_frequency_buckets)
     for bucket_idx, bucket_datasets in enumerate(all_bucket_datasets):
         rare_dataset_recall = compute_average_rare_dataset_recall(relevant_csv, retrieved_csv, bucket_datasets)
