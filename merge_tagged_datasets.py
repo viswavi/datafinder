@@ -1,6 +1,7 @@
 '''
 python merge_tagged_datasets.py \
     --combined-file tagged_datasets_merged_random_negatives.jsonl \
+    --dataset-tldrs tagged_dataset_tldrs_scrubbed.hypo \
     --tagged-positives-file tagged_dataset_positives.jsonl \
     --tagged-negatives-file tagged_dataset_negatives.jsonl \
     --negative-mining sample \
@@ -11,7 +12,7 @@ or
 
 python merge_tagged_datasets.py \
     --combined-file tagged_datasets_merged_hard_negatives.jsonl \
-    --dataset-tldrs tagged_dataset_tldrs.hypo \
+    --dataset-tldrs tagged_dataset_tldrs_scrubbed.hypo \
     --tagged-positives-file tagged_dataset_positives.jsonl \
     --tagged-negatives-file tagged_dataset_negatives.jsonl \
     --negative-mining hard \
@@ -71,7 +72,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     tagged_positives = load_rows(args.tagged_positives_file)
     tagged_negatives = load_rows_by_abstract(args.tagged_negatives_file)
-    tldrs = open(args.dataset_tldrs).read().split("\n")[:-1]
+    tldrs = [t.strip() for t in open(args.dataset_tldrs).readlines()]
 
     if args.negative_mining == "hard":
         # Mine negatives via BM25 retrieval

@@ -35,6 +35,6 @@ if __name__ == "__main__":
         else:
             scrubbed = scrub_dataset_references(tldr, dataset_names)
             out_rows.append(scrubbed)
-    outfile = open(args.outfile, 'w')
+    outfile = open(args.out_file, 'w')
     outfile.write("\n".join(out_rows))
     outfile.close()
