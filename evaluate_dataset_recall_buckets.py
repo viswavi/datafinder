@@ -52,14 +52,14 @@ def read_retrieved_csv(f):
     return queries
 
 def compute_average_rare_dataset_recall(relevant, retrieved, rare_datasets):
-    assert relevant.keys() == retrieved.keys()
     recalls = []
     for query in relevant:
+        retrieved_results = retrieved.get(query, [])
         relevant_rare_datasets = [r for r in relevant[query] if r in rare_datasets]
         if len(relevant_rare_datasets) == 0:
             continue
         recall_k = len(relevant[query]) # Since we're doing R-Precision-style evaluation
-        retrieved_rare_datasets = [r for r in retrieved[query][:recall_k] if r in rare_datasets]
+        retrieved_rare_datasets = [r for r in retrieved_results[:recall_k] if r in rare_datasets]
         relevant_retrieved_rare_datasets = set(retrieved_rare_datasets).intersection(relevant_rare_datasets)
         recall = float(len(relevant_retrieved_rare_datasets)) / float(len(relevant_rare_datasets))
         recalls.append(recall)
