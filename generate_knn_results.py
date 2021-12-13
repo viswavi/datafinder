@@ -87,7 +87,7 @@ def preprocess_text(query, remove_function_words=False, remove_punctuation=False
         query = " ".join(non_stopwords)
     return query
 
-def construct_scibert_vectorizer(device=2):
+def construct_scibert_vectorizer(device=3):
     model = "allenai/scibert_scivocab_uncased"
     feature_extractor = pipeline('feature-extraction', model=model, tokenizer=model, device=device)
     return feature_extractor
@@ -157,15 +157,16 @@ def combine_hits(hits: List[SearchResult]) -> List[SearchResult]:
     final_hits = sorted(final_hits, key=lambda result: result.score, reverse=True)
     return final_hits
 
-def knn_search(knn_distances, knn_indices, datasets_list, query_metadata, dataset_metadata, combiner="exact_top", num_results=4):
+def knn_search(knn_distances, knn_indices, datasets_list, test_queries, query_metadata, dataset_metadata, combiner="exact_top", num_results=4):
     all_hits = []
     for row_idx in range(len(knn_distances)):
-        query_meta = query_metadata[row_idx]
+        query_meta = query_metadata[test_queries[row_idx]]
         query_year = query_meta["year"]
         hits = []
         if combiner == "exact_top":
             for i, score in enumerate(knn_distances[row_idx][:num_results]):
-                hits.append(SearchResult(datasets_list[knn_indices[row_idx][i]], score))
+                for dataset in datasets_list[knn_indices[row_idx][i]]:
+                    hits.append(SearchResult(dataset, score))
         elif combiner == "weighted":
             dataset_weighted_scores = defaultdict(float)
 
@@ -275,10 +276,9 @@ if __name__ == "__main__":
     for row in search_collection:
         dataset_metadata[row["id"]] = row
 
-    if args.combiner == "exact_top":
-        knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), args.num_results)
+    if args.knn_aggregator == "exact_top":
+        knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), args.results_limit)
     else:
         knn_distances, knn_indices = faiss_index.search(np.array(query_vectors), 10)
-    all_hits = knn_search(knn_distances, knn_indices, dataset_ids, query_metadata, dataset_metadata, combiner=args.knn_aggregator, num_results=args.results_limit)
-
+    all_hits = knn_search(knn_distances, knn_indices, dataset_ids, test_queries, query_metadata, dataset_metadata, combiner=args.knn_aggregator, num_results=args.results_limit)
     write_hits_to_tsv(args.output_file, all_hits, test_queries, args.results_limit)
