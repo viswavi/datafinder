@@ -7,18 +7,20 @@ python convert_scirex.py \
     --output-relevance-file data/test/test_dataset_collection.qrels \
     --output-queries-file data/test/test_queries.csv \
     --output-combined-file data/test/scirex_queries_and_datasets.json \
-    --training-set-documents tagged_dataset_positives.jsonl
+    --training-set-documents tagged_dataset_positives.jsonl \
+    --bad-query-filter-map bad_tldrs_mapping.json
 '''
 
 import argparse
+from collections import Counter
 import csv
 import json
 import jsonlines
 import os
 import pickle
+import string
 
-from collections import Counter
-
+from utils import scrub_dataset_references
 
 def transformed_document(doc):
     return doc
@@ -38,10 +40,10 @@ if __name__ == "__main__":
     parser.add_argument('--output-queries-file', type=str, default="data/test/test_queries.json")
     parser.add_argument('--output-combined-file', type=str, default="data/test/scirex_queries_and_datasets.json")
     parser.add_argument('--training-set-documents', type=str, default="tagged_datasets.jsonl")
+    parser.add_argument('--bad-query-filter-map', type=str, help="Mapping for manual list of bad SciREX queries to filter out", default="bad_tldrs_mapping.json")
 
     args = parser.parse_args()
     
-
     dataset_search_collection = list(jsonlines.open(args.dataset_search_collection))
     variant_to_dataset_mapping = {}
     for dataset in sorted(dataset_search_collection, key = lambda x: len(x["contents"]), reverse=True):
@@ -54,7 +56,6 @@ if __name__ == "__main__":
             variant_to_dataset_mapping[var] = dataset["id"]
 
     scirex_to_s2orc_metadata = pickle.load(open(args.scirex_to_s2orc_metadata_file, 'rb'))
-    tlds = [scirex_to_s2orc_metadata[row]["tldr"] for row in scirex_to_s2orc_metadata]
     relevance_file = open(args.output_relevance_file, 'w')
     tsv_writer = csv.writer(relevance_file, delimiter='\t')
     tsv_writer.writerow(["QueryID", "0", "DocID", "Relevance"])
@@ -69,6 +70,10 @@ if __name__ == "__main__":
     for doc, count in least_common_dataset_counts:
         rare_datasets.add(doc)
         cumulative_count += count
+
+    datasets_list = json.load(open(args.datasets_file))
+    bad_query_filter_map = json.load(open(args.bad_query_filter_map))
+
     print(f"{round(len(rare_datasets) / float(len(tag_counts)) * 100, 2)}% most rare datasets make up only {round(cumulative_count/ float(len(tagged_datasets)) * 100, 2)}% of mentions")
 
     mismatches_cache = {}
@@ -141,6 +146,18 @@ if __name__ == "__main__":
             tldr = scirex_to_s2orc_metadata[doc["doc_id"]]["tldr"]
             if "None <|TLDR|>" in tldr:
                 continue
+
+            assert tldr in bad_query_filter_map
+            if bad_query_filter_map[tldr] is True:
+                continue
+
+            dataset_names = []
+            for dataset in datasets_list:
+                if dataset["name"] in dataset_tags:
+                    dataset_names.append(dataset["name"])
+                    # dataset_names.extend(dataset["variants"])
+            dataset_names = list(set(dataset_names))
+            tldr = scrub_dataset_references(tldr, dataset_names)
             if len(set(dataset_tags)) != len(set(datasets_labeled)):
                 print(f"Possible dataset mismatch found: {list(set(dataset_tags))} vs {list(set(datasets_labeled))}")
                 print("Is this mismatch ok? Y/n")
