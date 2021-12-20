@@ -1,9 +1,9 @@
 '''
 python convert_tevatron_output_to_trec_eval.py \
-    --output-trec-file /projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_models/tevatron.trec \
-    --tevatron-ranking /projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_models/rank.tsv \
-    --id2dataset /projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_data/metadata/id2dataset.json \
-    --test-queries /projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_data/test_queries.jsonl \
+    --output-trec-file REPO_PATH/tevatron_models/tevatron.trec \
+    --tevatron-ranking REPO_PATH/tevatron_models/rank.tsv \
+    --id2dataset REPO_PATH/tevatron_data/metadata/id2dataset.json \
+    --test-queries REPO_PATH/tevatron_data/test_queries.jsonl \
     --search-collection dataset_search_collection.jsonl \
     --depth 5
 '''
@@ -15,10 +15,10 @@ import json
 import jsonlines
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--output-trec-file', type=str, default="/projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_models/trec.output")
-parser.add_argument('--tevatron-ranking', type=str, default="/projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_models/rank.tsv")
-parser.add_argument('--id2dataset', type=str, default="/projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_data/metadata/id2dataset.json")
-parser.add_argument('--test-queries', type=str, default="/projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_data/test_queries.jsonl")
+parser.add_argument('--output-trec-file', type=str, default="REPO_PATH/tevatron_models/trec.output")
+parser.add_argument('--tevatron-ranking', type=str, default="REPO_PATH/tevatron_models/rank.tsv")
+parser.add_argument('--id2dataset', type=str, default="REPO_PATH/tevatron_data/metadata/id2dataset.json")
+parser.add_argument('--test-queries', type=str, default="REPO_PATH/tevatron_data/test_queries.jsonl")
 parser.add_argument('--search-collection', type=str, default="dataset_search_collection.jsonl")
 parser.add_argument('--depth', type=int, required=True)
 

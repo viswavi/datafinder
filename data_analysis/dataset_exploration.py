@@ -7,9 +7,9 @@ import jsonlines
 import numpy as np
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--train-file', type=str, default="/projects/metis0_ssd/users/vijayv/dataset-recommendation/tagged_dataset_positives.jsonl")
-parser.add_argument('--test-file', type=str, default="/projects/metis0_ssd/users/vijayv/dataset-recommendation/scirex_queries_and_datasets.json")
-parser.add_argument('--datasets-file', type=str, default="/projects/metis0_ssd/users/vijayv/dataset-recommendation/datasets.json")
+parser.add_argument('--train-file', type=str, default="REPO_PATH/tagged_dataset_positives.jsonl")
+parser.add_argument('--test-file', type=str, default="REPO_PATH/scirex_queries_and_datasets.json")
+parser.add_argument('--datasets-file', type=str, default="REPO_PATH/datasets.json")
 
 def construct_dataset_year_mapping(datasets_file):
     dataset_year_mapping = {}

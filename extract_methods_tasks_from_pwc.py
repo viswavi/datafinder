@@ -10,8 +10,8 @@ import argparse
 import json
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--evaluation-tables-file', type=str, required=True, help="Downloaded from /projects/metis0_ssd/users/vijayv/dataset-recommendation/")
-parser.add_argument('--methods-file', type=str, required=True, help="Downloaded from /projects/metis0_ssd/users/vijayv/dataset-recommendation/")
+parser.add_argument('--evaluation-tables-file', type=str, required=True, help="Downloaded from REPO_PATH/")
+parser.add_argument('--methods-file', type=str, required=True, help="Downloaded from REPO_PATH/")
 parser.add_argument('--output-methods-list-file', type=str, default="methods.csv")
 parser.add_argument('--output-tasks-list-file', type=str, default="tasks.csv")
 

@@ -53,7 +53,7 @@ import spacy
 
 nlp = spacy.load("en_core_web_sm")
 
-PICKLE_CACHES_DIR = "/home/vijayv/pickle_backups/dataset_recommendation"
+PICKLE_CACHES_DIR = "PICKLES_DIRECTORYdataset_recommendation"
 
 def delete_punctuation(st):
     return " ".join(''.join(' ' if c in string.punctuation else c for c in st).split())

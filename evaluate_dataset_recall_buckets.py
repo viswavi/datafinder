@@ -1,7 +1,7 @@
 '''
 python evaluate_rare_dataset_recall.py \
-/projects/ogma1/vijayv/dataset-recommendation/data/test/test_dataset_collection.qrels \
-/projects/ogma1/vijayv/dataset-recommendation/data/test/retrieved_documents_knn_weighted.trec
+REPO_PATH/data/test/test_dataset_collection.qrels \
+REPO_PATH/data/test/retrieved_documents_knn_weighted.trec
 '''
 
 import argparse

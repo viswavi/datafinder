@@ -1,8 +1,8 @@
 '''
 python sbert_scripts/generate_sbert_predictions_crossencoder.py \
     --crossencoder-model-directory sbert_models/bert_hard_negatives \
-    --biencoder_query_reps /projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_data/test_queries_hard_negatives_longer_input_scibert/query.pt \
-    --biencoder_passage_reps /projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_data/search_encoded_hard_negatives_longer_input_scibert/*.pt \
+    --biencoder_query_reps REPO_PATH/tevatron_data/test_queries_hard_negatives_longer_input_scibert/query.pt \
+    --biencoder_passage_reps REPO_PATH/tevatron_data/search_encoded_hard_negatives_longer_input_scibert/*.pt \
     --search-collection dataset_search_collection.jsonl \
     --test-queries tevatron_data/test_queries.jsonl  \
     --output-file sbert_models/bert_hard_negatives/sbert.trec \
@@ -38,8 +38,8 @@ parser.add_argument('--batch-size', type=int, default=32)
 parser.add_argument('--first-stage-depth', type=int, default=10)
 parser.add_argument('--first-stage-batch-size', type=int, default=128)
 parser.add_argument('--results-limit', type=int, default=5)
-parser.add_argument('--biencoder_query_reps', type=str, default="/projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_data/test_queries_hard_negatives_longer_input_scibert/0.pt")
-parser.add_argument('--biencoder_passage_reps', type=str, default="/projects/metis0_ssd/users/vijayv/dataset-recommendation/tevatron_data/search_encoded_hard_negatives_longer_input_scibert/*.pt")
+parser.add_argument('--biencoder_query_reps', type=str, default="REPO_PATH/tevatron_data/test_queries_hard_negatives_longer_input_scibert/0.pt")
+parser.add_argument('--biencoder_passage_reps', type=str, default="REPO_PATH/tevatron_data/search_encoded_hard_negatives_longer_input_scibert/*.pt")
 
 def read_dataset_collection(search_collection):
     dataset_texts = []

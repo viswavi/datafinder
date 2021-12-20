@@ -8,7 +8,7 @@ from tqdm import tqdm
 
 from paperswithcode import PapersWithCodeClient
 
-s2orc_caches="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/"
+s2orc_caches="STORAGE_PATH/s2orc_caches/"
 
 class PwCMetadata:
     def __init__(self, title=None, doi=None, arxivId=None):

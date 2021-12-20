@@ -1,6 +1,6 @@
 '''
 python extract_abstracts_from_scirex_papers.py \
-    --scirex-to-s2orc-metadata-file /home/vijayv/pickle_backups/scirex_id_to_s2orc_metadata.pkl \
+    --scirex-to-s2orc-metadata-file PICKLES_DIRECTORYscirex_id_to_s2orc_metadata.pkl \
     --tldr-input-file scirex_abstracts.temp
 '''
 

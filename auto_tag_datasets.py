@@ -25,12 +25,12 @@ nlp = make_tok_seg()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output-file', type=str, default="tagged_datasets.jsonl")
-parser.add_argument('--s2orc-full-text-directory', type=str, default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_full_texts/")
-parser.add_argument('--s2orc-metadata-directory', type=str, default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_metadata/")
+parser.add_argument('--s2orc-full-text-directory', type=str, default="STORAGE_PATH/s2orc_caches/s2orc_full_texts/")
+parser.add_argument('--s2orc-metadata-directory', type=str, default="STORAGE_PATH/s2orc_caches/s2orc_metadata/")
 parser.add_argument('--tag-negatives', action="store_true")
 
 def load_introducing_paper_to_dataset_mapping():
-    mapping = pickle.load(open("/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/pwc_dataset_to_s2orc_mapping.pkl", 'rb'))
+    mapping = pickle.load(open("STORAGE_PATH/s2orc_caches/pwc_dataset_to_s2orc_mapping.pkl", 'rb'))
     reverse_mapping = {}
     for dataset, paperid in mapping.items():
         assert len(paperid) == 1

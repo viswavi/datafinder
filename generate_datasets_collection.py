@@ -25,10 +25,10 @@ parser.add_argument('--output-file', type=str, default="dataset_search_collectio
 parser.add_argument('--pwc-datasets-file', type=str, default="datasets.json")
 parser.add_argument('--dataset-to-s2orc-mapping-file',
                     type=str,
-                    default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/pwc_dataset_to_s2orc_mapping.json",
+                    default="STORAGE_PATH/s2orc_caches/pwc_dataset_to_s2orc_mapping.json",
                     help="This file contains the papers introducing each dataset")
-parser.add_argument('--s2orc-full-text-directory', type=str, default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_full_texts/")
-parser.add_argument('--s2orc-metadata-directory', type=str, default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_metadata/")
+parser.add_argument('--s2orc-full-text-directory', type=str, default="STORAGE_PATH/s2orc_caches/s2orc_full_texts/")
+parser.add_argument('--s2orc-metadata-directory', type=str, default="STORAGE_PATH/s2orc_caches/s2orc_metadata/")
 parser.add_argument('--exclude-abstract', action="store_true")
 parser.add_argument('--exclude-full-text', action="store_true")
 

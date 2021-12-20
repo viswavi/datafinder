@@ -16,7 +16,7 @@ from auto_tag_datasets import load_introducing_paper_to_dataset_mapping, nlp
 np.random.seed(1900)
 
 # Directory containing S2ORC full texts (>75GB)
-full_texts_directory = "/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_full_texts/"
+full_texts_directory = "STORAGE_PATH/s2orc_caches/s2orc_full_texts/"
 
 def generate_candidate_snippets(num_snippets_to_label=-1, max_repetitions_for_dataset=5):
     pwc_datasets_file = "datasets.json"

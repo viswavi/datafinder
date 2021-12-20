@@ -1,9 +1,9 @@
 '''
 python convert_scirex.py \
-    --scirex-directory /projects/ogma1/vijayv/SciREX/scirex_dataset/release_data/ \
+    --scirex-directory SCIREX_PATH/scirex_dataset/release_data/ \
     --dataset-search-collection dataset_search_collection.jsonl \
     --datasets-file datasets.json \
-    --scirex-to-s2orc-metadata-file /home/vijayv/pickle_backups/scirex_id_to_s2orc_metadata_with_tldrs.pkl \
+    --scirex-to-s2orc-metadata-file PICKLES_DIRECTORYscirex_id_to_s2orc_metadata_with_tldrs.pkl \
     --output-relevance-file data/test/test_dataset_collection.qrels \
     --output-queries-file data/test/test_queries.csv \
     --output-combined-file data/test/scirex_queries_and_datasets.json \
@@ -31,11 +31,11 @@ def input_y_n():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument('--scirex-directory', type=str, default="/projects/ogma1/vijayv/SciREX/scirex_dataset/release_data/",
+    parser.add_argument('--scirex-directory', type=str, default="SCIREX_PATH/scirex_dataset/release_data/",
                         help="Path to local pickle file containing raw dataset sentences for labeling")
     parser.add_argument('--dataset-search-collection', type=str, default="dataset_search_collection.jsonl", help="Jsonlines file containing all the datasets in our \"search collection\"")
     parser.add_argument('--datasets-file', type=str, default="datasets.json", help="JSON file containing metadata about all datasets on PapersWithCode")
-    parser.add_argument('--scirex-to-s2orc-metadata-file', type=str, help="Pickle file containing mapping (with tldrs) from SciREX paper IDs to S2ORC metadata", default="/home/vijayv/pickle_backups/scirex_id_to_s2orc_metadata_with_tldrs.pkl")
+    parser.add_argument('--scirex-to-s2orc-metadata-file', type=str, help="Pickle file containing mapping (with tldrs) from SciREX paper IDs to S2ORC metadata", default="PICKLES_DIRECTORYscirex_id_to_s2orc_metadata_with_tldrs.pkl")
     parser.add_argument('--output-relevance-file', type=str, default="data/test/test_dataset_collection.qrels")
     parser.add_argument('--output-queries-file', type=str, default="data/test/test_queries.json")
     parser.add_argument('--output-combined-file', type=str, default="data/test/scirex_queries_and_datasets.json")
