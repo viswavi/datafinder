@@ -12,7 +12,7 @@ or
 
 python merge_tagged_datasets.py \
     --combined-file tagged_datasets_merged_hard_negatives.jsonl \
-    --dataset-tldrs tagged_dataset_tldrs_scrubbed.hypo \
+    --dataset-tldrs train_tldrs_scrubbed.hypo \
     --tagged-positives-file tagged_dataset_positives.jsonl \
     --tagged-negatives-file tagged_dataset_negatives.jsonl \
     --negative-mining hard \
@@ -30,7 +30,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--tagged-positives-file', type=str, default="tagged_dataset_positives.jsonl")
 parser.add_argument('--tagged-negatives-file', type=str, default="tagged_dataset_negatives.jsonl")
 parser.add_argument('--combined-file', type=str, default="tagged_datasets_merged.jsonl")
-parser.add_argument('--dataset-tldrs', type=str, default="tagged_dataset_tldrs.hypo")
+parser.add_argument('--dataset-tldrs', type=str, default="train_tldrs_scrubbed.hypo")
 parser.add_argument('--num-negatives', type=int, default=7, help="How many negatives to choose for each dataset")
 parser.add_argument('--negative-mining', choices=["sample", "hard"], default="sample")
 parser.add_argument('--anserini-index', type=str, help="Path to Anserini index of datasets to search to find hard negatives")

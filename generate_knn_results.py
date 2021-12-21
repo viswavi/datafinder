@@ -4,7 +4,7 @@ python generate_knn_results.py \
     --remove-stopwords \
     --query-metadata data/test/scirex_queries_and_datasets.json \
     --training-set tagged_dataset_positives.jsonl \
-    --training-tldrs tagged_dataset_tldrs.hypo \
+    --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
     --output-file data/test/retrieved_documents_knn_exact_longer_input_tfidf.trec \
     --vectorizer-type tfidf \
@@ -15,7 +15,7 @@ python generate_knn_results.py \
     --remove-stopwords \
     --query-metadata data/test/scirex_queries_and_datasets.json \
     --training-set tagged_dataset_positives.jsonl \
-    --training-tldrs tagged_dataset_tldrs.hypo \
+    --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
     --output-file data/test/retrieved_documents_knn_weighted.trec \
     --vectorizer-type tfidf \
@@ -26,7 +26,7 @@ python generate_knn_results.py \
     --remove-stopwords \
     --query-metadata data/test/scirex_queries_and_datasets.json \
     --training-set tagged_dataset_positives.jsonl \
-    --training-tldrs tagged_dataset_tldrs.hypo \
+    --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
     --output-file data/test/retrieved_documents_knn_exact_bert.trec \
     --vectorizer-type bert \
