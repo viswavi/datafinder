@@ -1,9 +1,21 @@
 # dataset-recommendation
 
-# Processed Dataset
+## Requirements
+```
+pytorch >= 1.8.2
+```
+
+```
+pip install pyserini
+pip install tevatron
+conda install faiss
+```
+
+
+## Processed Dataset
 Found in `data/`. Both training and test data contain "tldr", "positives", and "year" for each query. The training set contains other metadata (such as hard negatives and detailed metadata about the paper we used to extract the query).
 
-# Data Preprocessing
+## Data Preprocessing
 Download and untar data from https://github.com/allenai/SciREX/blob/master/scirex_dataset/release_data.tar.gz
 ### Prepare Search Corpus
 `python generate_datasets_collection.py --exclude-abstract --exclude-full-text --output-file dataset_search_collection.jsonl`
@@ -44,16 +56,10 @@ python merge_tagged_datasets.py \
     --num-negatives 7
 ```
 
-# Training
+## Training
 
-### Requirements
 
-```
-pip install pyserini
-pip install tevatron
-conda install faiss
-```
-
+## Reproducing Experiments
 ### Labeling tool:
 `python label_dataset_sentences.py --labeler-name <your name> --range-to-label 1,10`
 
