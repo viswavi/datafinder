@@ -2,33 +2,33 @@
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --query-metadata data/test/scirex_queries_and_datasets.json \
+    --query-metadata scirex_queries_and_datasets.json \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
-    --output-file data/test/retrieved_documents_knn_exact_longer_input_tfidf.trec \
+    --output-file retrieved_documents_knn_exact_longer_input_tfidf.trec \
     --vectorizer-type tfidf \
     --knn-aggregator exact_top
 
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --query-metadata data/test/scirex_queries_and_datasets.json \
+    --query-metadata scirex_queries_and_datasets.json \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
-    --output-file data/test/retrieved_documents_knn_weighted.trec \
+    --output-file retrieved_documents_knn_weighted.trec \
     --vectorizer-type tfidf \
-    --knn-aggregator weighted
+    --knn-aggregator weighted   
 
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --query-metadata data/test/scirex_queries_and_datasets.json \
+    --query-metadata scirex_queries_and_datasets.json \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
-    --output-file data/test/retrieved_documents_knn_exact_bert.trec \
+    --output-file retrieved_documents_knn_exact_bert.trec \
     --vectorizer-type bert \
     --knn-aggregator exact_top
 '''
@@ -220,10 +220,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--training-set", type=str, default="tagged_datasets.jsonl", help="Training collection of queries and documents")
     parser.add_argument("--training-tldrs", type=str, default="tagged_dataset_tldrs.hypo")
-    parser.add_argument("--test-set", type=str, default="data/test/test_dataset_collection.jsonl", help="Test collection of queries and documents")
-    parser.add_argument('--test_queries', type=str, default="data/test/test_queries.csv", help="List of newline-delimited queries")
-    parser.add_argument('--query-metadata', type=str, default="data/test/scirex_queries_and_datasets.json")
-    parser.add_argument('--output-file', type=str, default="data/test/retrieved_documents.trec", help="Retrieval file, in TREC format")
+    parser.add_argument("--test-set", type=str, default="test_dataset_collection.jsonl", help="Test collection of queries and documents")
+    parser.add_argument('--test_queries', type=str, default="test_queries.csv", help="List of newline-delimited queries")
+    parser.add_argument('--query-metadata', type=str, default="scirex_queries_and_datasets.json")
+    parser.add_argument('--output-file', type=str, default="retrieved_documents.trec", help="Retrieval file, in TREC format")
     parser.add_argument('--search-collection', type=str, default="dataset_search_collection/documents.jsonl")
     parser.add_argument('--remove-function-words', action="store_true")
     parser.add_argument('--remove-punctuation', action="store_true")

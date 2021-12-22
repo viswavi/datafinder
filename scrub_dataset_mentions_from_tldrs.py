@@ -1,5 +1,5 @@
 '''
-python scrub_dataset_mentions_from_tldrs.py tagged_dataset_tldrs.hypo tagged_dataset_tldrs_scrubbed.hypo
+python scrub_dataset_mentions_from_tldrs.py train_tldrs.hypo train_tldrs_scrubbed.hypo
 '''
 
 import argparse
