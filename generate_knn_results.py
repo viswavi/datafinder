@@ -2,7 +2,7 @@
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --query-metadata test_data.json \
+    --query-metadata data/test_data.jsonl \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
@@ -13,7 +13,7 @@ python generate_knn_results.py \
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --query-metadata test_data.json \
+    --query-metadata data/test_data.jsonl \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
@@ -24,7 +24,7 @@ python generate_knn_results.py \
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --query-metadata test_data.json \
+    --query-metadata test_data.jsonl \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     parser.add_argument("--training-tldrs", type=str, default="tagged_dataset_tldrs.hypo")
     parser.add_argument("--test-set", type=str, default="test_dataset_collection.jsonl", help="Test collection of queries and documents")
     parser.add_argument('--test_queries', type=str, default="test_queries.csv", help="List of newline-delimited queries")
-    parser.add_argument('--query-metadata', type=str, default="test_data.json")
+    parser.add_argument('--query-metadata', type=str, default="data/test_data.jsonl")
     parser.add_argument('--output-file', type=str, default="retrieved_documents.trec", help="Retrieval file, in TREC format")
     parser.add_argument('--search-collection', type=str, default="dataset_search_collection/documents.jsonl")
     parser.add_argument('--remove-function-words', action="store_true")

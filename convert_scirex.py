@@ -3,13 +3,13 @@ Download SciREX data from https://github.com/allenai/SciREX/blob/master/scirex_d
 SCIREX_PATH/scirex_dataset/release_data/.
 
 python convert_scirex.py \
-    --scirex-directory SCIREX_PATH/scirex_dataset/release_data/ \
+    --scirex-directory $SCIREX_PATH/scirex_dataset/release_data/ \
     --dataset-search-collection dataset_search_collection.jsonl \
     --datasets-file datasets.json \
-    --scirex-to-s2orc-metadata-file PICKLES_DIRECTORY/scirex_id_to_s2orc_metadata_with_tldrs.pkl \
-    --output-relevance-file test_dataset_collection.qrels \
+    --scirex-to-s2orc-metadata-file $PICKLES_DIRECTORY/scirex_id_to_s2orc_metadata_with_tldrs.pkl \
+    --output-relevance-file data/test_dataset_collection.qrels \
     --output-queries-file test_queries.csv \
-    --output-combined-file data/test_data.json \
+    --output-combined-file data/test_data.jsonl \
     --training-set-documents tagged_dataset_positives.jsonl \
     --bad-query-filter-map bad_tldrs_mapping.json
 '''
@@ -186,7 +186,9 @@ if __name__ == "__main__":
 
     print(f"Wrote {num_rows_written} test documents to {args.output_relevance_file}")
 
-    json.dump(queries_and_datasets, open(args.output_combined_file, 'w'))
+    with open(args.output_combined_file, 'w') as outfile:
+        writer = jsonlines.Writer(outfile)
+        writer.write_all(queries_and_datasets)
     print(f"Wrote {num_rows_written} test documents to {args.output_combined_file}")
 
     print(f"{documents_containing_rare_datasets} test set documents contain rare datasets, giving an average of {round(float(total_rare_datasets_in_test_set) / documents_containing_rare_datasets, 2)} rare datasets per test set document.")

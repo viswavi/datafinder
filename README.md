@@ -28,13 +28,13 @@ export PICKLES_DIRECTORY=intermediate_data
 
 ```
 python convert_scirex.py \
-    --scirex-directory SCIREX_PATH/scirex_dataset/release_data/ \
+    --scirex-directory $SCIREX_PATH/scirex_dataset/release_data/ \
     --dataset-search-collection dataset_search_collection.jsonl \
     --datasets-file datasets.json \
-    --scirex-to-s2orc-metadata-file PICKLES_DIRECTORY/scirex_id_to_s2orc_metadata_with_tldrs.pkl \
+    --scirex-to-s2orc-metadata-file $PICKLES_DIRECTORY/scirex_id_to_s2orc_metadata_with_tldrs.pkl \
     --output-relevance-file test_dataset_collection.qrels \
     --output-queries-file test_queries.csv \
-    --output-combined-file data/test_data.json \
+    --output-combined-file data/test_data.jsonl \
     --training-set-documents tagged_dataset_positives.jsonl \
     --bad-query-filter-map bad_tldrs_mapping.json
 ```

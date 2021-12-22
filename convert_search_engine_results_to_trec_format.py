@@ -23,7 +23,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('search_engines_file', type=str, help='CSV file containing results from a search engine (Google Datasets or PwC)')
 parser.add_argument('output_trec_file', type=str, help='Output in TREC format')
 parser.add_argument('--depth', type=int, default=5, help="Max results to return per query")
-parser.add_argument('--test-set-annotations', type=str, default="test_data.json")
+parser.add_argument('--test-set-annotations', type=str, default="data/test_data.jsonl")
 parser.add_argument('--datasets-file', type=str, default="datasets.json", help="JSON file containing metadata about all datasets on PapersWithCode")
 
 def interleave_results(all_query_results, max_results):
@@ -55,7 +55,7 @@ if __name__ == "__main__":
     for row in datasets_list:
         datasets[row["name"]] = row
 
-    test_set_annotations = json.load(open(args.test_set_annotations))
+    test_set_annotations = jsonlines.open(args.test_set_annotations)
     query_metadata = {}
     for row in test_set_annotations:
         query_metadata[row["tldr"]] = row

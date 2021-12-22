@@ -30,7 +30,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--test-set", type=str, default="test_dataset_collection.jsonl", help="Test collection of queries and documents")
     parser.add_argument('--test_queries', type=str, default="test_queries.csv", help="List of newline-delimited queries")
-    parser.add_argument('--query-metadata', type=str, default="test_data.json")
+    parser.add_argument('--query-metadata', type=str, default="data/test_data.jsonl")
     parser.add_argument('--output-file', type=str, default="retrieved_documents.trec", help="Retrieval file, in TREC format")
     parser.add_argument('--anserini-index', type=str, default="indexes/dataset_collection_jsonl")
     parser.add_argument('--search-collection', type=str, default="dataset_search_collection/documents.jsonl")
@@ -46,7 +46,7 @@ if __name__ == "__main__":
         dataset_metadata[row["id"]] = row
 
     query_metadata = {}
-    for row in json.load(open(args.query_metadata)):
+    for row in jsonlines.open(args.query_metadata):
         query_metadata[row["tldr"]] = row
 
     searcher = SimpleSearcher(args.anserini_index)
