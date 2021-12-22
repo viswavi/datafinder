@@ -1,12 +1,12 @@
-METADATA_FILE=PICKLES_DIRECTORYscirex_id_to_s2orc_metadata.pkl
-UPDATED_METADATA_FILE=PICKLES_DIRECTORYscirex_id_to_s2orc_metadata_with_tldrs.pkl
+CURRENT_DIR=$(pwd)
+METADATA_FILE=$PICKLES_DIRECTORY/scirex_id_to_s2orc_metadata.pkl
+UPDATED_METADATA_FILE=$PICKLES_DIRECTORY/scirex_id_to_s2orc_metadata_with_tldrs.pkl
 
 SCIREX_ABSTRACTS_FILE=scirex_abstracts.temp
 python extract_abstracts_from_scirex_papers.py --scirex-to-s2orc-metadata-file $METADATA_FILE --tldr-input-file $SCIREX_ABSTRACTS_FILE
 
-TLDR_DIR=REPO_PATH/tldr/scitldr/
+TLDR_DIR=${CURRENT_DIR}/tldr/scitldr/
 cp $SCIREX_ABSTRACTS_FILE ${TLDR_DIR}/SciTLDR-Data/SciTLDR-A/ctrl/test.source
-CURRENT_DIR=$(pwd)
 
 cd $TLDR_DIR
 TLDR_FILE=${CURRENT_DIR}/scirex_tldrs.hypo

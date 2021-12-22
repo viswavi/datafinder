@@ -2,7 +2,7 @@
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --query-metadata scirex_queries_and_datasets.json \
+    --query-metadata test_data.json \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
@@ -13,7 +13,7 @@ python generate_knn_results.py \
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --query-metadata scirex_queries_and_datasets.json \
+    --query-metadata test_data.json \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
@@ -24,7 +24,7 @@ python generate_knn_results.py \
 python generate_knn_results.py \
     --remove-punctuation \
     --remove-stopwords \
-    --query-metadata scirex_queries_and_datasets.json \
+    --query-metadata test_data.json \
     --training-set tagged_dataset_positives.jsonl \
     --training-tldrs train_tldrs_scrubbed.hypo \
     --search-collection dataset_search_collection/documents.jsonl \
@@ -53,7 +53,7 @@ import spacy
 
 nlp = spacy.load("en_core_web_sm")
 
-PICKLE_CACHES_DIR = "PICKLES_DIRECTORYdataset_recommendation"
+PICKLE_CACHES_DIR = "PICKLES_DIRECTORY/dataset_recommendation"
 
 def delete_punctuation(st):
     return " ".join(''.join(' ' if c in string.punctuation else c for c in st).split())
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     parser.add_argument("--training-tldrs", type=str, default="tagged_dataset_tldrs.hypo")
     parser.add_argument("--test-set", type=str, default="test_dataset_collection.jsonl", help="Test collection of queries and documents")
     parser.add_argument('--test_queries', type=str, default="test_queries.csv", help="List of newline-delimited queries")
-    parser.add_argument('--query-metadata', type=str, default="scirex_queries_and_datasets.json")
+    parser.add_argument('--query-metadata', type=str, default="test_data.json")
     parser.add_argument('--output-file', type=str, default="retrieved_documents.trec", help="Retrieval file, in TREC format")
     parser.add_argument('--search-collection', type=str, default="dataset_search_collection/documents.jsonl")
     parser.add_argument('--remove-function-words', action="store_true")
@@ -270,7 +270,7 @@ if __name__ == "__main__":
 
     query_metadata = {}
     for row in json.load(open(args.query_metadata)):
-        query_metadata[row["query"]] = row
+        query_metadata[row["tldr"]] = row
 
     dataset_metadata = {}
     for row in search_collection:
