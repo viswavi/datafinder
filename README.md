@@ -18,7 +18,7 @@ Found in `data/`. Both training and test data contain "tldr", "positives", and "
 ## Data Preprocessing
 Download and untar data from https://github.com/allenai/SciREX/blob/master/scirex_dataset/release_data.tar.gz
 ### Prepare Search Corpus
-Download and unzip the `datasets` data from https://github.com/paperswithcode/paperswithcode-data, and place into `data/`
+Download and unzip the `datasets` data from https://github.com/paperswithcode/paperswithcode-data, and place into `data/`.
 
 `python data_processing/build_search_corpus/generate_datasets_collection.py --exclude-abstract --exclude-full-text --output-file dataset_search_collection.jsonl`
 
@@ -59,7 +59,7 @@ python data_processing/train_data/merge_tagged_datasets.py \
 ```
 
 ## Training
-See [biencoder training instructions](retrieval/biencoder/tevatron_scripts/README.md).
+See [biencoder training instructions](retrieval/biencoder/tevatron_scripts/README.md#training).
 
 ## Retrieval
 
@@ -97,6 +97,9 @@ python retrieval/knn/generate_results.py \
     --vectorizer-type bert \
     --results-limit 5
 ```
+
+### Bi-Encoder (Tevatron)
+See [biencoder retrieval instructions](retrieval/biencoder/tevatron_scripts/README.md#retrieval).
 
 ## Reproducing Experiments
 ### Labeling tool:
