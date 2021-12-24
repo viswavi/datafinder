@@ -2,7 +2,7 @@
 Download SciREX data from https://github.com/allenai/SciREX/blob/master/scirex_dataset/release_data.tar.gz to
 SCIREX_PATH/scirex_dataset/release_data/.
 
-python convert_scirex.py \
+python data_processing/test_data/convert_scirex.py \
     --scirex-directory $SCIREX_PATH/scirex_dataset/release_data/ \
     --dataset-search-collection dataset_search_collection.jsonl \
     --datasets-file datasets.json \

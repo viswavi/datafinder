@@ -1,9 +1,9 @@
 '''
-python auto_tag_datasets.py --output-file tagged_datasets.jsonl
+python data_processing/train_data/auto_tag_datasets.py --output-file tagged_datasets.jsonl
 
 or
 
-python auto_tag_datasets.py --output-file tagged_dataset_negatives.jsonl --tag-negatives
+python data_processing/train_data/auto_tag_datasets.py --output-file tagged_dataset_negatives.jsonl --tag-negatives
 '''
 
 import argparse

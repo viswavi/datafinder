@@ -59,7 +59,44 @@ python data_processing/train_data/merge_tagged_datasets.py \
 ```
 
 ## Training
+See [biencoder training instructions](retrieval/biencoder/tevatron_scripts/README.md).
 
+## Retrieval
+
+### BM25
+```
+python retrieval/bm25/generate_results.py \
+--anserini-index anserini_search_collections/dataset_search_collection_no_abstracts_or_paper_text_jsonl \
+--output-file retrieved_documents_bm25.trec \
+--results-limit 5
+```
+
+### k-NN (TF-IDF features)
+```
+python retrieval/knn/generate_results.py \
+    --remove-punctuation \
+    --remove-stopwords \
+    --training-set data/train_data.jsonl \
+    --training-tldrs data/train_tldrs.hypo \
+    --search-collection anserini_search_collections/dataset_search_collection_no_abstracts_or_paper_text/documents.jsonl \
+    --output-file retrieved_documents_knn_tfidf.trec \
+    --vectorizer-type tfidf \
+    --results-limit 5
+```
+
+### k-NN (BERT features)
+```
+python retrieval/knn/generate_results.py \
+    --remove-punctuation \
+    --remove-stopwords \
+    --query-metadata data/test/scirex_queries_and_datasets.json \
+    --training-set data/train_data.jsonl \
+    --training-tldrs data/train_tldrs.hypo \
+    --search-collection anserini_search_collections/dataset_search_collection_no_abstracts_or_paper_text/documents.jsonl \
+    --output-file data/test/retrieved_documents_knn_exact_bert.trec \
+    --vectorizer-type bert \
+    --results-limit 5
+```
 
 ## Reproducing Experiments
 ### Labeling tool:

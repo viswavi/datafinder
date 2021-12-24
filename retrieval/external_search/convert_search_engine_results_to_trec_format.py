@@ -1,10 +1,10 @@
 '''
-python convert_search_engine_results_to_trec_format.py \
+python retrieval/external_search/convert_search_engine_results_to_trec_format.py \
     pwc_search_results.tsv \
     pwc_search_results.trec \
     --depth 5
 
-python convert_search_engine_results_to_trec_format.py \
+python retrieval/external_search/convert_search_engine_results_to_trec_format.py \
     google_search_results.tsv \
     google_search_results.trec \
     --depth 5

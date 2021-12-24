@@ -1,5 +1,5 @@
 '''
-python merge_tagged_datasets.py \
+python data_processing/train_data/merge_tagged_datasets.py \
     --combined-file tagged_datasets_merged_random_negatives.jsonl \
     --dataset-tldrs tagged_dataset_tldrs_scrubbed.hypo \
     --tagged-positives-file tagged_dataset_positives.jsonl \
@@ -9,7 +9,7 @@ python merge_tagged_datasets.py \
 
 or
 
-python merge_tagged_datasets.py \
+python data_processing/train_data/merge_tagged_datasets.py \
     --combined-file tagged_datasets_merged_hard_negatives.jsonl \
     --dataset-tldrs train_tldrs_scrubbed.hypo \
     --tagged-positives-file tagged_dataset_positives.jsonl \
