@@ -18,7 +18,9 @@ Found in `data/`. Both training and test data contain "tldr", "positives", and "
 ## Data Preprocessing
 Download and untar data from https://github.com/allenai/SciREX/blob/master/scirex_dataset/release_data.tar.gz
 ### Prepare Search Corpus
-`python generate_datasets_collection.py --exclude-abstract --exclude-full-text --output-file dataset_search_collection.jsonl`
+Download and unzip the `datasets` data from https://github.com/paperswithcode/paperswithcode-data, and place into `data/`
+
+`python data_processing/build_search_corpus/generate_datasets_collection.py --exclude-abstract --exclude-full-text --output-file dataset_search_collection.jsonl`
 
 ### Prepare Test Data
 
@@ -27,7 +29,7 @@ export PICKLES_DIRECTORY=intermediate_data
 ./add_tldrs_to_scirex_abstracts.sh
 
 ```
-python convert_scirex.py \
+python data-processing/test_data/convert_scirex.py \
     --scirex-directory $SCIREX_PATH/scirex_dataset/release_data/ \
     --dataset-search-collection dataset_search_collection.jsonl \
     --datasets-file datasets.json \
@@ -42,11 +44,11 @@ python convert_scirex.py \
 ### Prepare Training Data
 
 ```
-python scrub_dataset_mentions_from_tldrs.py train_tldrs.hypo train_tldrs_scrubbed.hypo
+python utils/scrub_dataset_mentions_from_tldrs.py train_tldrs.hypo train_tldrs_scrubbed.hypo
 ```
 
 ```
-python merge_tagged_datasets.py \
+python data_processing/train_data/merge_tagged_datasets.py \
     --combined-file data/train_data.jsonl \
     --dataset-tldrs train_tldrs_scrubbed.hypo \
     --tagged-positives-file tagged_dataset_positives.jsonl \
@@ -61,5 +63,5 @@ python merge_tagged_datasets.py \
 
 ## Reproducing Experiments
 ### Labeling tool:
-`python label_dataset_sentences.py --labeler-name <your name> --range-to-label 1,10`
+`python data_processing/train_data/label_dataset_sentences.py --labeler-name <your name> --range-to-label 1,10`
 
