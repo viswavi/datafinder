@@ -1,4 +1,27 @@
-# dataset-recommendation
+# Dataset Recommendation
+
+## Table of Contents
+
+- [Dataset Recommendation](#dataset-recommendation)
+  - [Table of Contents](#table-of-contents)
+  - [Requirements](#requirements)
+- [Ready-to-Use Dataset](#ready-to-use-dataset)
+- [Data Preprocessing](#data-preprocessing)
+    - [Prepare Search Corpus](#prepare-search-corpus)
+    - [Prepare Test Data](#prepare-test-data)
+    - [Prepare Training Data](#prepare-training-data)
+- [Retrieval](#retrieval)
+  - [BM25](#bm25)
+  - [k-NN (TF-IDF features)](#k-nn-tf-idf-features)
+  - [k-NN (BERT features)](#k-nn-bert-features)
+  - [Bi-Encoder (Tevatron)](#bi-encoder-tevatron)
+    - [Training](#training)
+    - [Retrieval](#retrieval-1)
+- [Evaluate results](#evaluate-results)
+  - [Core Metrics](#core-metrics)
+    - [Bucketing by Dataset Frequency](#bucketing-by-dataset-frequency)
+  - [Evaluating data quality](#evaluating-data-quality)
+    - [Labeling tool](#labeling-tool)
 
 ## Requirements
 ```
@@ -58,9 +81,6 @@ python data-processing/test_data/convert_scirex.py \
 
 To reproduce this data (or to customize the training set), see the [training data preparation instructions](data_processing/train_data/README.md).
 
-# Training
-See [biencoder training instructions](retrieval/biencoder/tevatron_scripts/README.md#Training).
-
 # Retrieval
 
 ## BM25
@@ -94,6 +114,10 @@ python retrieval/knn/generate_results.py \
 ```
 
 ## Bi-Encoder (Tevatron)
+### Training
+Neural "bi-encoder" retrievers must be trained on our training data. See [biencoder training instructions](retrieval/biencoder/tevatron_scripts/README.md#Training).
+
+### Retrieval
 See [biencoder retrieval instructions](retrieval/biencoder/tevatron_scripts/README.md#Retrieval).
 
 
@@ -123,8 +147,8 @@ RETRIEVAL_OUTPUT=data/test/retrieved_documents_knn_exact_bert.trec
 python data_analysis/evaluate_dataset_recall_buckets.py $GOLD_FILE $RETRIEVAL_OUTPUT
 ```
 
-# Reproducing Experiments
-### Labeling tool:
+## Evaluating data quality
+### Labeling tool
 This tool was used to validate the quality of labels in our training set:
 `python data_processing/train_data/label_dataset_sentences.py --labeler-name <your name> --range-to-label 1,200`.
 
