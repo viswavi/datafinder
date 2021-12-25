@@ -1,11 +1,11 @@
 '''
-python prepare_tevatron_data.py \
-    --tagged-datasets-file tagged_datasets_merged_hard_negatives.jsonl \
-    --search-collection dataset_search_collection.jsonl \
-    --test-queries scirex_queries_and_datasets.json \
-    --output-training-directory tevatron_data/training_raw_hard_negatives_sep \
-    --output-search-directory tevatron_data/search_raw_sep \
-    --output-query-file tevatron_data/test_queries_with_prefixes.jsonl
+python retrieval/biencoder/tevatron_scripts/prepare_tevatron_data.py \
+    --tagged-datasets-file data/train_data.jsonl \
+    --search-collection data/dataset_search_collection.jsonl \
+    --test-queries data/test_data.jsonl \
+    --output-training-directory tevatron_data/training \
+    --output-search-directory tevatron_data/search \
+    --output-query-file tevatron_data/test_queries.jsonl
 '''
 
 import argparse
@@ -20,7 +20,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('--output-training-directory', type=str, default="tevatron_data/training_raw")
 parser.add_argument('--output-search-directory', type=str, default="tevatron_data/search_raw")
 parser.add_argument('--output-metadata-directory', type=str, default="tevatron_data/metadata")
-parser.add_argument('--output-query-file', type=str, default="tevatron_data/test_queries.jsonl")
+parser.add_argument('--output-query-file', type=str, default="data/test_data.jsonl")
 parser.add_argument('--num-shards', type=int, default=1, help="Number of shards of search collection to write")
 parser.add_argument('--test-queries', type=str, default="scirex_queries_and_datasets.json")
 parser.add_argument('--tagged-datasets-file', type=str, default="tagged_datasets_merged_random_negatives.jsonl")

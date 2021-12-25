@@ -11,6 +11,14 @@ pip install tevatron
 conda install faiss
 ```
 
+```
+git submodule add https://github.com/castorini/anserini
+cd anserini
+cd tools/eval && tar xvfz trec_eval.9.0.4.tar.gz && cd trec_eval.9.0.4 && make && cd ../../..
+cd tools/eval/ndeval && make && cd ../../../..
+```
+
+
 
 ## Processed Dataset
 Found in `data/`. Both training and test data contain "tldr", "positives", and "year" for each query. The training set contains other metadata (such as hard negatives and detailed metadata about the paper we used to extract the query).
@@ -20,7 +28,7 @@ Download and untar data from https://github.com/allenai/SciREX/blob/master/scire
 ### Prepare Search Corpus
 Download and unzip the `datasets` data from https://github.com/paperswithcode/paperswithcode-data, and place into `data/`.
 
-`python data_processing/build_search_corpus/generate_datasets_collection.py --exclude-abstract --exclude-full-text --output-file dataset_search_collection.jsonl`
+`python data_processing/build_search_corpus/generate_datasets_collection.py --exclude-abstract --exclude-full-text --output-file data/dataset_search_collection.jsonl`
 
 ### Prepare Test Data
 
@@ -31,10 +39,10 @@ export PICKLES_DIRECTORY=intermediate_data
 ```
 python data-processing/test_data/convert_scirex.py \
     --scirex-directory $SCIREX_PATH/scirex_dataset/release_data/ \
-    --dataset-search-collection dataset_search_collection.jsonl \
+    --dataset-search-collection data/dataset_search_collection.jsonl \
     --datasets-file datasets.json \
     --scirex-to-s2orc-metadata-file $PICKLES_DIRECTORY/scirex_id_to_s2orc_metadata_with_tldrs.pkl \
-    --output-relevance-file test_dataset_collection.qrels \
+    --output-relevance-file data/test_dataset_collection.qrels \
     --output-queries-file test_queries.csv \
     --output-combined-file data/test_data.jsonl \
     --training-set-documents tagged_dataset_positives.jsonl \
@@ -59,7 +67,7 @@ python data_processing/train_data/merge_tagged_datasets.py \
 ```
 
 ## Training
-See [biencoder training instructions](retrieval/biencoder/tevatron_scripts/README.md#training).
+See [biencoder training instructions](retrieval/biencoder/tevatron_scripts/README.md#Training).
 
 ## Retrieval
 
@@ -99,7 +107,34 @@ python retrieval/knn/generate_results.py \
 ```
 
 ### Bi-Encoder (Tevatron)
-See [biencoder retrieval instructions](retrieval/biencoder/tevatron_scripts/README.md#retrieval).
+See [biencoder retrieval instructions](retrieval/biencoder/tevatron_scripts/README.md#Retrieval).
+
+
+## Evaluate results
+### Core Metrics
+```
+GOLD_FILE=data/test_dataset_collection.qrels
+# Set RETRIEVAL_OUTPUT to the desired file. Example provided:
+RETRIEVAL_OUTPUT=data/test/retrieved_documents_knn_exact_bert.trec
+
+./anserini/tools/eval/trec_eval.9.0.4/trec_eval \
+    -c \
+    -m P.5 \
+    -m recall.5 \
+    -m map \
+    -m recip_rank \
+    $GOLD_FILE \
+    $RETRIEVAL_OUTPUT
+```
+
+### Bucketing by Dataset Frequency
+```
+GOLD_FILE=data/test_dataset_collection.qrels
+# Set RETRIEVAL_OUTPUT to the desired file. Example provided:
+RETRIEVAL_OUTPUT=data/test/retrieved_documents_knn_exact_bert.trec
+
+python data_analysis/evaluate_dataset_recall_buckets.py $GOLD_FILE $RETRIEVAL_OUTPUT
+```
 
 ## Reproducing Experiments
 ### Labeling tool:
