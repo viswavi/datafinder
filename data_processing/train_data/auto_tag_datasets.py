@@ -4,7 +4,7 @@ python data_processing/train_data/auto_tag_datasets.py \
     --s2orc-metadata-directory S2ORC_PATH/s2orc_metadata/ \
     --pwc-to-s2orc-mapping S2ORC_PATH/s2orc_metadata/pwc_dataset_to_s2orc_mapping.pkl \
     --pwc-datasets-file datasets.json \
-    --output-file tagged_datasets.jsonl
+    --output-file tagged_dataset_positives.jsonl
 
 or
 
