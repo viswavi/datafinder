@@ -1,4 +1,4 @@
-## Training
+# Training
 
 ### Prepare data
 ```
@@ -28,7 +28,7 @@ CUDA_VISIBLE_DEVICES=0 python -m tevatron.driver.train \
     --dataloader_num_workers 2
 ```
 
-## Retrieval
+# Retrieval
 
 ### Encode Corpus
 ```
