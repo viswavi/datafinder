@@ -32,12 +32,15 @@ Download and unzip the `datasets` data from https://github.com/paperswithcode/pa
 `python data_processing/build_search_corpus/generate_datasets_collection.py --exclude-abstract --exclude-full-text --output-file data/dataset_search_collection.jsonl`
 
 ### Prepare Test Data
+**Prepared test data can be found at `data/test_data.jsonl`.**
 
+To reproduce this data (or to customize the test set), run the following commands:
+
+```
 mkdir intermediate_data
 export PICKLES_DIRECTORY=intermediate_data
 ./add_tldrs_to_scirex_abstracts.sh
 
-```
 python data-processing/test_data/convert_scirex.py \
     --scirex-directory $SCIREX_PATH/scirex_dataset/release_data/ \
     --dataset-search-collection data/dataset_search_collection.jsonl \
@@ -51,8 +54,9 @@ python data-processing/test_data/convert_scirex.py \
 ```
 
 ### Prepare Training Data
+**Prepared training data can be found at `data/train_data.jsonl`.**
 
-See [training data preparation instructions](data_processing/train_data/README.md).
+To reproduce this data (or to customize the training set), see the [training data preparation instructions](data_processing/train_data/README.md).
 
 ## Training
 See [biencoder training instructions](retrieval/biencoder/tevatron_scripts/README.md#Training).
@@ -60,10 +64,21 @@ See [biencoder training instructions](retrieval/biencoder/tevatron_scripts/READM
 ## Retrieval
 
 ### BM25
+Prepared Anserini indices can be found at `anserini_search_collections`. We have included three types of indices which we experimented on:
+1. `anserini_search_collections/dataset_search_collection_description_title_only`: dataset descriptions and titles of the dataset's introducing paper
+2. `anserini_search_collections/dataset_search_collection_with_paper_abstract`: dataset descriptions, introducing paper titles, and introducing paper abstracts
+3. `anserini_search_collections/dataset_search_collection_with_paper_abstract_and_text`: dataset descriptions, introducing paper titles, introducing paper abstracts, and the full text of the introducing paper
+
+In our experiments, we found that #1 was most effective for BM25 retrieval.
+
+To see instructions for generating these Anserini indices yourself, see [Anserini index construction](retrieval/bm25/README.md).
+
 ```
 python retrieval/bm25/generate_results.py \
---anserini-index anserini_search_collections/dataset_search_collection_no_abstracts_or_paper_text_jsonl \
+--anserini-index anserini_search_collections/dataset_search_collection_description_title_only \
 --output-file retrieved_documents_bm25.trec \
+--query-metadata data/test_data.jsonl \
+--search-collection data/dataset_search_collection.jsonl \
 --results-limit 5
 ```
 

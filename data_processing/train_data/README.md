@@ -36,22 +36,22 @@ python data_processing/train_data/auto_tag_datasets.py \
 ```
 
 ### Create anserini index, to be used for hard negative mining via BM25
-This part requires the construction of our search collection. See the main README at the root of this repository for instructions.
+This part requires the construction of our search corpus (`data/dataset_search_collection.jsonl`). See the main README at the root of this repository for instructions.
 
 ```
-mkdir -p anserini_search_collections/dataset_search_collection_no_paper_text_jsonl
+mkdir -p anserini_search_collections/dataset_search_collection_description_title_only
 python data_processing/build_search_corpus/configure_search_collection.py \
     --exclude-abstract \
     --exclude-full-text \
     --full-documents data/dataset_search_collection.jsonl \
-    --filtered-documents anserini_search_collections/dataset_search_collection_no_paper_text_jsonl/documents.jsonl
+    --filtered-documents anserini_search_collections/dataset_search_collection_description_title_only/documents.jsonl
 
 mkdir -p indexes
 python -m pyserini.index -collection JsonCollection \
                          -generator DefaultLuceneDocumentGenerator \
                          -threads 1 \
-                         -input anserini_search_collections/dataset_search_collection_no_paper_text_jsonl  \
-                         -index indexes/dataset_search_collection_no_abstracts_or_paper_text_jsonl \
+                         -input anserini_search_collections/dataset_search_collection_description_title_only  \
+                         -index indexes/dataset_search_collection_description_title_only \
                          -storePositions -storeDocvectors -storeRaw
 ```
 
@@ -67,7 +67,7 @@ python data_processing/train_data/merge_tagged_datasets.py \
     --tagged-positives-file data/tagged_dataset_positives.jsonl \
     --tagged-negatives-file data/tagged_dataset_negatives.jsonl \
     --negative-mining hard \
-    --anserini-index indexes/dataset_search_collection_no_abstracts_or_paper_text_jsonl \
+    --anserini-index indexes/dataset_search_collection_description_title_only \
     --num-negatives 7
 ```
 

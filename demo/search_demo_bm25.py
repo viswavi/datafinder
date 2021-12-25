@@ -1,6 +1,6 @@
 '''
-python search_demo.py --anserini-index indexes/dataset_search_collection_no_abstracts_or_paper_text_jsonl
-python search_demo.py --remove-punctuation --remove-stopwords --anserini-index indexes/dataset_search_collection_no_abstracts_or_paper_text_jsonl
+python search_demo.py --anserini-index indexes/dataset_search_collection_description_title_only
+python search_demo.py --remove-punctuation --remove-stopwords --anserini-index indexes/dataset_search_collection_description_title_only
 '''
 from nltk.corpus import stopwords
 from pyserini.search import SimpleSearcher
