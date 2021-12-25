@@ -6,6 +6,7 @@ pytorch >= 1.8.2
 ```
 
 ```
+pip install paperswithcode-client
 pip install pyserini
 pip install tevatron
 conda install faiss
@@ -24,7 +25,7 @@ cd tools/eval/ndeval && make && cd ../../../..
 Found in `data/`. Both training and test data contain "tldr", "positives", and "year" for each query. The training set contains other metadata (such as hard negatives and detailed metadata about the paper we used to extract the query).
 
 ## Data Preprocessing
-Download and untar data from https://github.com/allenai/SciREX/blob/master/scirex_dataset/release_data.tar.gz
+Download and untar data from https://github.com/allenai/SciREX/blob/master/scirex_dataset/release_data.tar.gz.
 ### Prepare Search Corpus
 Download and unzip the `datasets` data from https://github.com/paperswithcode/paperswithcode-data, and place into `data/`.
 
@@ -51,20 +52,7 @@ python data-processing/test_data/convert_scirex.py \
 
 ### Prepare Training Data
 
-```
-python utils/scrub_dataset_mentions_from_tldrs.py train_tldrs.hypo train_tldrs_scrubbed.hypo
-```
-
-```
-python data_processing/train_data/merge_tagged_datasets.py \
-    --combined-file data/train_data.jsonl \
-    --dataset-tldrs train_tldrs_scrubbed.hypo \
-    --tagged-positives-file tagged_dataset_positives.jsonl \
-    --tagged-negatives-file tagged_dataset_negatives.jsonl \
-    --negative-mining hard \
-    --anserini-index indexes/dataset_search_collection_no_paper_text_jsonl \
-    --num-negatives 7
-```
+See [training data preparation instructions](data_processing/train_data/README.md).
 
 ## Training
 See [biencoder training instructions](retrieval/biencoder/tevatron_scripts/README.md#Training).
@@ -138,5 +126,6 @@ python data_analysis/evaluate_dataset_recall_buckets.py $GOLD_FILE $RETRIEVAL_OU
 
 ## Reproducing Experiments
 ### Labeling tool:
-`python data_processing/train_data/label_dataset_sentences.py --labeler-name <your name> --range-to-label 1,10`
+This tool was used to validate the quality of labels in our training set:
+`python data_processing/train_data/label_dataset_sentences.py --labeler-name <your name> --range-to-label 1,200`.
 
