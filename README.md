@@ -21,10 +21,10 @@ cd tools/eval/ndeval && make && cd ../../../..
 
 
 
-## Processed Dataset
+# Ready-to-Use Dataset
 Found in `data/`. Both training and test data contain "tldr", "positives", and "year" for each query. The training set contains other metadata (such as hard negatives and detailed metadata about the paper we used to extract the query).
 
-## Data Preprocessing
+# Data Preprocessing
 Download and untar data from https://github.com/allenai/SciREX/blob/master/scirex_dataset/release_data.tar.gz.
 ### Prepare Search Corpus
 Download and unzip the `datasets` data from https://github.com/paperswithcode/paperswithcode-data, and place into `data/`.
@@ -58,31 +58,15 @@ python data-processing/test_data/convert_scirex.py \
 
 To reproduce this data (or to customize the training set), see the [training data preparation instructions](data_processing/train_data/README.md).
 
-## Training
+# Training
 See [biencoder training instructions](retrieval/biencoder/tevatron_scripts/README.md#Training).
 
-## Retrieval
+# Retrieval
 
-### BM25
-Prepared Anserini indices can be found at `anserini_search_collections`. We have included three types of indices which we experimented on:
-1. `anserini_search_collections/dataset_search_collection_description_title_only`: dataset descriptions and titles of the dataset's introducing paper
-2. `anserini_search_collections/dataset_search_collection_with_paper_abstract`: dataset descriptions, introducing paper titles, and introducing paper abstracts
-3. `anserini_search_collections/dataset_search_collection_with_paper_abstract_and_text`: dataset descriptions, introducing paper titles, introducing paper abstracts, and the full text of the introducing paper
+## BM25
+See [BM25 retrieval and index construction instructions](retrieval/bm25/README.md).
 
-In our experiments, we found that #1 was most effective for BM25 retrieval.
-
-To see instructions for generating these Anserini indices yourself, see [Anserini index construction](retrieval/bm25/README.md).
-
-```
-python retrieval/bm25/generate_results.py \
---anserini-index anserini_search_collections/dataset_search_collection_description_title_only \
---output-file retrieved_documents_bm25.trec \
---query-metadata data/test_data.jsonl \
---search-collection data/dataset_search_collection.jsonl \
---results-limit 5
-```
-
-### k-NN (TF-IDF features)
+## k-NN (TF-IDF features)
 ```
 python retrieval/knn/generate_results.py \
     --remove-punctuation \
@@ -95,7 +79,7 @@ python retrieval/knn/generate_results.py \
     --results-limit 5
 ```
 
-### k-NN (BERT features)
+## k-NN (BERT features)
 ```
 python retrieval/knn/generate_results.py \
     --remove-punctuation \
@@ -109,12 +93,12 @@ python retrieval/knn/generate_results.py \
     --results-limit 5
 ```
 
-### Bi-Encoder (Tevatron)
+## Bi-Encoder (Tevatron)
 See [biencoder retrieval instructions](retrieval/biencoder/tevatron_scripts/README.md#Retrieval).
 
 
-## Evaluate results
-### Core Metrics
+# Evaluate results
+## Core Metrics
 ```
 GOLD_FILE=data/test_dataset_collection.qrels
 # Set RETRIEVAL_OUTPUT to the desired file. Example provided:
@@ -139,7 +123,7 @@ RETRIEVAL_OUTPUT=data/test/retrieved_documents_knn_exact_bert.trec
 python data_analysis/evaluate_dataset_recall_buckets.py $GOLD_FILE $RETRIEVAL_OUTPUT
 ```
 
-## Reproducing Experiments
+# Reproducing Experiments
 ### Labeling tool:
 This tool was used to validate the quality of labels in our training set:
 `python data_processing/train_data/label_dataset_sentences.py --labeler-name <your name> --range-to-label 1,200`.
