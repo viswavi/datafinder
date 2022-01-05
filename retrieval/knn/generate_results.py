@@ -104,8 +104,7 @@ def preprocess_text(query, remove_function_words=False, remove_punctuation=False
         query = " ".join(non_stopwords)
     return query
 
-def construct_scibert_vectorizer(device=3):
-    model = "allenai/scibert_scivocab_uncased"
+def construct_scibert_vectorizer(model="allenai/scibert_scivocab_uncased", device=3):
     feature_extractor = pipeline('feature-extraction', model=model, tokenizer=model, device=device)
     return feature_extractor
 
