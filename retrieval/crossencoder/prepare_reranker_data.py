@@ -13,9 +13,11 @@ from collections import defaultdict
 import json
 import os
 import random
+import sys
 from transformers import AutoTokenizer
+sys.path.extend(["..", ".", "../.."])
 
-from prepare_tevatron_data import generate_doc_ids, load_rows
+from retrieval.biencoder.tevatron_scripts.prepare_tevatron_data import generate_doc_ids, load_rows
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--tagged-datasets-file', required=True, type=str, default="tagged_datasets_merged_hard_negatives.jsonl")

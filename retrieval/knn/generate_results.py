@@ -43,6 +43,7 @@ import os
 import pickle
 import string
 import time
+from tqdm import tqdm
 from typing import List
 from transformers import pipeline
 
@@ -108,7 +109,6 @@ def construct_scibert_vectorizer(model="allenai/scibert_scivocab_uncased", devic
     feature_extractor = pipeline('feature-extraction', model=model, tokenizer=model, device=device)
     return feature_extractor
 
-
 def vectorize_text(text_lines, vectorizer, vectorizer_type, batch_size=400):
     start = time.perf_counter()
     if vectorizer_type == "tfidf":
@@ -116,7 +116,7 @@ def vectorize_text(text_lines, vectorizer, vectorizer_type, batch_size=400):
         vectorized_text = np.array(vectorized_text_sparse.todense())
     elif vectorizer_type == "bert":
         bert_vectors = []
-        for batch_idx in range(int(np.ceil(len(text_lines) / batch_size))):
+        for batch_idx in tqdm(range(int(np.ceil(len(text_lines) / batch_size)))):
             batch_bert_vectors = vectorizer(text_lines[batch_idx*batch_size:(batch_idx+1)*batch_size])
             bert_vectors.extend(batch_bert_vectors)
         vectorized_text = np.array([v[0] for v in bert_vectors])

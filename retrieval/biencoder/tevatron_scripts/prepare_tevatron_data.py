@@ -12,9 +12,11 @@ import argparse
 import json
 import jsonlines
 import os
+import sys
 from tqdm import tqdm
+sys.path.extend(["..", ".", "../..", "../../.."])
 
-from extract_methods_tasks_from_pwc import add_prompt_to_description, parse_tasks_from_evaluation_tables_file, parse_methods_from_methods_file
+from data_processing.build_search_corpus.extract_methods_tasks_from_pwc import add_prompt_to_description, parse_tasks_from_evaluation_tables_file, parse_methods_from_methods_file
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output-training-directory', type=str, default="tevatron_data/training_raw")
