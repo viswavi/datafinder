@@ -16,7 +16,10 @@ import sys
 from tqdm import tqdm
 sys.path.extend(["..", ".", "../..", "../../.."])
 
-from data_processing.build_search_corpus.extract_methods_tasks_from_pwc import add_prompt_to_description, parse_tasks_from_evaluation_tables_file, parse_methods_from_methods_file
+try:
+    from data_processing.build_search_corpus.extract_methods_tasks_from_pwc import add_prompt_to_description, parse_tasks_from_evaluation_tables_file, parse_methods_from_methods_file
+except:
+    from extract_methods_tasks_from_pwc import add_prompt_to_description, parse_tasks_from_evaluation_tables_file, parse_methods_from_methods_file
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output-training-directory', type=str, default="tevatron_data/training_raw")
