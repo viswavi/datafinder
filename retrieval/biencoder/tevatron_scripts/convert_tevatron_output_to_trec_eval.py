@@ -20,6 +20,8 @@ parser.add_argument('--tevatron-ranking', type=str, default="REPO_PATH/tevatron_
 parser.add_argument('--id2dataset', type=str, default="REPO_PATH/tevatron_data/metadata/id2dataset.json")
 parser.add_argument('--test-queries', type=str, default="REPO_PATH/tevatron_data/test_queries.jsonl")
 parser.add_argument('--search-collection', type=str, default="dataset_search_collection.jsonl")
+parser.add_argument('--query2keyphrase', type=str, default=None)
+
 parser.add_argument('--depth', type=int, required=True)
 
 if __name__ == "__main__":
@@ -27,6 +29,7 @@ if __name__ == "__main__":
     test_queries = list(jsonlines.open(args.test_queries))
     id2dataset = json.load(open(args.id2dataset))
 
+    query2keyphrase = json.load(open(args.query2keyphrase))
 
     query_idx_to_year_mapping = {}
     for query_row in jsonlines.open(args.test_queries):
@@ -42,6 +45,8 @@ if __name__ == "__main__":
 
         query_datasets = defaultdict(set)
 
+        query2idx_counter = -1
+
         previous_query = None
         current_query_retrieved_count = 0
         for row in open(args.tevatron_ranking).read().split("\n"):
@@ -52,13 +57,14 @@ if __name__ == "__main__":
             if query_idx != previous_query:
                 current_query_retrieved_count = 0
                 previous_query = query_idx
+                query2idx_counter += 1
             query_year = query_idx_to_year_mapping[query_idx]
             raw_docid = id2dataset[dataset_idx]
             docid = "_".join(raw_docid.split())
             if docid in query_datasets[query_idx]:
                 continue
             query_datasets[query_idx].add(docid)
-            query = test_queries[query_idx]["text"]
+            query = query2keyphrase[query_idx][0]
 
             if "[SEP]" in query:
                 query_id = "_".join(query.split("[SEP] ")[-1].split())

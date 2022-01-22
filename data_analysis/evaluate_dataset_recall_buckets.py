@@ -7,6 +7,7 @@ REPO_PATH/data/test/retrieved_documents_knn_weighted.trec
 import argparse
 from collections import defaultdict, Counter
 import csv
+import json
 import jsonlines
 import numpy as np
 import sys
@@ -73,6 +74,7 @@ if __name__ == "__main__":
     parser.add_argument('relevant_trec_file', type=str)
     parser.add_argument('retrieved_trec_file', type=str)
     parser.add_argument('--training-set-documents', type=str, default="tagged_dataset_positives.jsonl")
+    parser.add_argument('--test-set-documents', type=str, default="scirex_queries_and_datasets.json")
     args = parser.parse_args()
 
     relevant_csv = read_relevant_csv(args.relevant_trec_file)
@@ -80,8 +82,20 @@ if __name__ == "__main__":
 
     training_set_tags = list(jsonlines.open(args.training_set_documents))
 
-    training_frequency_buckets = [(501, 2500), (101, 500), (51, 100), (21, 50), (6, 20), (1, 5)]
+    training_frequency_buckets = [(501, 2500), (101, 500), (21, 100), (1, 20)]
     all_bucket_datasets = construct_quintile_dataset_lists(training_set_tags, training_frequency_buckets)
     for bucket_idx, bucket_datasets in enumerate(all_bucket_datasets):
         rare_dataset_recall = compute_average_rare_dataset_recall(relevant_csv, retrieved_csv, bucket_datasets)
         print(f"Recall in bucket {training_frequency_buckets[bucket_idx]}: {rare_dataset_recall}")
+    
+
+    test_set_bucket_counts = []
+    scirex_queries_and_datasets = json.load(open(args.test_set_documents))
+    for bucket_datasets in all_bucket_datasets:
+        bucket_count = 0
+        for row in scirex_queries_and_datasets:
+            for dataset in row["documents"]:
+                if dataset in bucket_datasets:
+                    bucket_count += 1
+        test_set_bucket_counts.append(bucket_count)
+    print(f"Test set counts by bucket: {list(zip(training_frequency_buckets, test_set_bucket_counts))}")
