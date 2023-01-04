@@ -13,11 +13,11 @@ def load_text_chunks(abstracts, tldrs, gpt3_suggestions, galactica_suggestions, 
     assert len(abstracts) == len(tldrs)
     chunks = [[]]
     small_chunks = 0
-    for i, (a, t,  gpt_suggestions, galactica_suggestions) in enumerate(zip(abstracts, tldrs, gpt3_suggestions, galactica_suggestions)):
+    for i, (a, t,  gpt, galactica) in enumerate(zip(abstracts, tldrs, gpt3_suggestions, galactica_suggestions)):
         text_dict = {"abstract": a,
                      "tldr": t,
-                     "gpt_suggestions": gpt_suggestions,
-                     "galactica_suggestions": galactica_suggestions}
+                     "gpt_suggestions": gpt,
+                     "galactica_suggestions": galactica}
         chunks[-1].append(text_dict)
         if small_chunks < num_small_chunks:
             if len(chunks[-1]) == small_chunk_size:
@@ -32,31 +32,74 @@ def load_text_chunks(abstracts, tldrs, gpt3_suggestions, galactica_suggestions, 
 
 def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galactica_suggestions, paper_index=1):
     galactica_task_suggestion = galactica_suggestions["Task"]
-    galactica_modality_suggestion = galactica_suggestions["Modality"].capitalize()
+    galactica_modality_suggestion = galactica_suggestions["Modality"]
+    if galactica_modality_suggestion == "N/A":
+        galactica_modality_suggestion = "N/A (leave empty)"
+    if galactica_modality_suggestion == "images":
+        galactica_modality_suggestion = "Image"
+    if galactica_modality_suggestion == "videos":
+        galactica_modality_suggestion = "Video"
+    if galactica_modality_suggestion == "video":
+        galactica_modality_suggestion = "Video"
+    if galactica_modality_suggestion == "text":
+        galactica_modality_suggestion = "Text"
     galactica_domain_suggestion = galactica_suggestions["Domain"]
+    if galactica_domain_suggestion == "N/A":
+        galactica_domain_suggestion = "N/A (leave empty)"
     galactica_training_style_suggestion = galactica_suggestions["Training Style"]
-    if galactica_training_style_suggestion == "fully supervised":
-        galactica_training_style_suggestion = "Large-scale supervised training/finetuning"
-
+    if galactica_training_style_suggestion in ["fully supervised", "fully-supervised", "supervised"]:
+        galactica_training_style_suggestion = "Supervised training/finetuning"
+    elif galactica_training_style_suggestion == "N/A":
+        galactica_training_style_suggestion = "N/A (leave empty)"
+    else:
+        galactica_training_style_suggestion = galactica_training_style_suggestion.capitalize()
     galactica_text_length_suggestion = galactica_suggestions["Text Length"]
+    if galactica_text_length_suggestion == "N/A":
+        galactica_text_length_suggestion = "N/A (leave empty)"
+    else:
+        galactica_text_length_suggestion = galactica_text_length_suggestion.capitalize()
     galactica_language_suggestion = galactica_suggestions["Language Required"]
+    if galactica_language_suggestion == "N/A":
+        galactica_language_suggestion = "N/A (leave empty)"
     galactica_summary_suggestion = galactica_suggestions["Single-Sentence Summary"]
 
     gpt3_task_suggestion = gpt3_suggestions["Task"]
-    gpt3_modality_suggestion = gpt3_suggestions["Modality"].capitalize()
+    gpt3_modality_suggestion = gpt3_suggestions["Modality"]
+    if gpt3_modality_suggestion == "N/A":
+        gpt3_modality_suggestion = "N/A (leave empty)"
+    if gpt3_modality_suggestion == "images":
+        gpt3_modality_suggestion = "Image"
+    if gpt3_modality_suggestion == "videos":
+        gpt3_modality_suggestion = "Video"
+    if gpt3_modality_suggestion == "video":
+        gpt3_modality_suggestion = "Video"
+    if gpt3_modality_suggestion == "text":
+        gpt3_modality_suggestion = "Text"
     gpt3_domain_suggestion = gpt3_suggestions["Domain"]
+    if gpt3_domain_suggestion == "N/A":
+        gpt3_domain_suggestion = "N/A (leave empty)"
     gpt3_training_style_suggestion = gpt3_suggestions["Training Style"]
-    if gpt3_training_style_suggestion == "fully supervised":
-        gpt3_training_style_suggestion = "Large-scale supervised training/finetuning"
+    if gpt3_training_style_suggestion in ["fully supervised", "fully-supervised", "supervised"]:
+        gpt3_training_style_suggestion = "Supervised training/finetuning"
+    elif gpt3_training_style_suggestion == "N/A":
+        gpt3_training_style_suggestion = "N/A (leave empty)"
+    else:
+        gpt3_training_style_suggestion = gpt3_training_style_suggestion.capitalize()
     gpt3_text_length_suggestion = gpt3_suggestions["Text Length"]
+    if gpt3_text_length_suggestion == "N/A":
+        gpt3_text_length_suggestion = "N/A (leave empty)"
+    else:
+        gpt3_text_length_suggestion = gpt3_text_length_suggestion.capitalize()
     gpt3_language_suggestion = gpt3_suggestions["Language Required"]
+    if gpt3_language_suggestion == "N/A":
+        gpt3_language_suggestion = "N/A (leave empty)"
     gpt3_summary_suggestion = gpt3_suggestions["Final Summary"]
 
     update_requests = [{
             "createItem": {
                 "item": {
                     'title': f'Paper #{paper_index}',
-                    'description': f'**Abstract**:\n{abstract}\n\n*Machine-Generated Summary*:\n{tldr}',
+                    'description': f'Abstract:\n{abstract}\n\nTLDR:\n{tldr}',
                     "pageBreakItem": {
                     }
                 },
@@ -68,7 +111,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
             "createItem": {
                 "item": {
                     'title': 'Task(s) mentioned in paper',
-                    "description": f'Provide comma-delimited list if multiple tasks are mentioned.\n**If no task is mentioned, leave this field empty, skip all the fields below, and skip to the next paper.**\n\nSuggestion from GPT-3: "{gpt3_task_suggestion}"\nSuggestion from Galactica: "{galactica_task_suggestion}"',
+                    "description": f'Provide comma-delimited list if multiple tasks are mentioned.\n(if no task is mentioned, leave this field empty, skip all the fields below, and skip to the next paper)\n\nSuggestion from GPT-3:\t\t{gpt3_task_suggestion}\nSuggestion from Galactica:\t{galactica_task_suggestion}',
                     "questionItem": {
                         "question": {
                             'textQuestion': {}
@@ -83,7 +126,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
             "createItem": {
                 "item": {
                     'title': 'Domain of paper (e.g. biomedical or aerial)',
-                    "description": f'Provide comma-delimited list if multiple tasks are mentioned. Leave empty if no task is mentioned.\n\nSuggestion from GPT-3: "{gpt3_domain_suggestion}"\nSuggestion from Galactica: "{galactica_domain_suggestion}"',
+                    "description": f'Provide comma-delimited list if multiple tasks are mentioned. Leave empty if no task is mentioned (or clearly implied).\n\nSuggestion from GPT-3:\t\t{gpt3_domain_suggestion}\nSuggestion from Galactica:\t{galactica_domain_suggestion}',
                     "questionItem": {
                         "question": {
                             'textQuestion': {}
@@ -98,7 +141,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
             "createItem": {
                 "item": {
                     'title': 'Modality required by paper',
-                    "description": f'Leave empty if not specified.\n\nSuggestion from GPT-3: "{gpt3_modality_suggestion}"\nSuggestion from Galactica: "{galactica_modality_suggestion}"',
+                    "description": f'Leave empty if not specified (or clearly implied).\n\nSuggestion from GPT-3:\t\t{gpt3_modality_suggestion}\nSuggestion from Galactica:\t{galactica_modality_suggestion}',
                     "questionItem": {
                         "question": {
                             'choiceQuestion': {
@@ -124,7 +167,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
             "createItem": {
                 "item": {
                     'title': 'Language of data or labels required',
-                    "description": f'Do not select anything if this is not specified.\n\nSuggestion from GPT-3: "{gpt3_language_suggestion}"\nSuggestion from Galactica: "{galactica_language_suggestion}"',
+                    "description": f'Do not select anything if this is not specified (or clearly implied).\n\nSuggestion from GPT-3:\t\t{gpt3_language_suggestion}\nSuggestion from Galactica:\t{galactica_language_suggestion}',
                     "questionItem": {
                         "question": {
                             'textQuestion': {}
@@ -139,13 +182,13 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
             "createItem": {
                 "item": {
                     'title': 'Training style',
-                    "description": f'Do not select anything if this is not specified.\n\nSuggestion from GPT-3: "{gpt3_training_style_suggestion}"\nSuggestion from Galactica: "{galactica_training_style_suggestion}"',
+                    "description": f'Do not select anything if this is not specified (or clearly implied).\n\nSuggestion from GPT-3:\t\t{gpt3_training_style_suggestion}\nSuggestion from Galactica:\t{galactica_training_style_suggestion}',
                     "questionItem": {
                         "question": {
                             'choiceQuestion': {
                                 'type': 'RADIO',
                                 'options': [{
-                                    'value': 'Large-scale supervised training/finetuning'
+                                    'value': 'Supervised training/finetuning'
                                 }, {
                                     'value': 'Few-shot'
                                 }, {
@@ -167,7 +210,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
             "createItem": {
                 "item": {
                     'title': 'Does this paper discuss sentence-level or paragraph-level text processing?',
-                    "description": f'Only applicable if this is an NLP paper. Do not select anything if this is not specified.\n\nSuggestion from GPT-3: "{gpt3_text_length_suggestion}"\nSuggestion from Galactica: "{galactica_text_length_suggestion}"',
+                    "description": f'Only applicable if this is an NLP paper. Do not select anything if this is not specified (or clearly implied).\n\nSuggestion from GPT-3:\t\t{gpt3_text_length_suggestion}\nSuggestion from Galactica:\t{galactica_text_length_suggestion}',
                     "questionItem": {
                         "question": {
                             'choiceQuestion': {
@@ -191,7 +234,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
             "createItem": {
                 "item": {
                     'title': 'Final Query',
-                    'description': f'Use any information you extracted in the questions above, along with any other critical information from the abstract that might inform the choice of dataset.\n\nSuggestion from GPT-3: "{gpt3_summary_suggestion}"\nSuggestion from Galactica: "{galactica_summary_suggestion}"',
+                    'description': f'Use any information you extracted in the questions above, along with any other critical information from the abstract that might inform the choice of dataset.\n\nSuggestion from GPT-3:\t\t"{gpt3_summary_suggestion}"\nSuggestion from Galactica:\t"{galactica_summary_suggestion}"',
                     "questionItem": {
                         "question": {
                             'required': False,
@@ -207,7 +250,6 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
             }
         }
     ]
-    breakpoint()
     return update_requests
 
 parser = argparse.ArgumentParser()
@@ -216,7 +258,7 @@ parser.add_argument("--tldrs", default="/Users/vijay/Documents/code/dataset-reco
 parser.add_argument("--form-ids-file", default="/Users/vijay/Documents/code/dataset-recommendation/data_processing/test_data/annotation_form_tracker.json")
 parser.add_argument("--gpt3-suggestions", default="/Users/vijay/Documents/code/dataset-recommendation/test_abstracts_parsed_by_gpt3_postprocessed.jsonl")
 parser.add_argument("--galactica-suggestions", default="/Users/vijay/Documents/code/dataset-recommendation/test_abstracts_parsed_by_galactica_postprocessed.jsonl")
-parser.add_argument("--num-forms-to-generate", type=int, default=1)
+parser.add_argument("--num-forms-to-generate", type=int, default=4)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -244,9 +286,9 @@ if __name__ == "__main__":
     example_tldr_2 = tldrs[1]
     tldrs = tldrs[2:]
     if args.num_forms_to_generate is not None:
-        text_chunks = load_text_chunks(abstracts, tldrs, gpt3_suggestions, galactica_suggestions, num_small_chunks=args.num_forms_to_generate, SMALL_CHUNKS_ONLY=True)
+        text_chunks = load_text_chunks(abstracts, tldrs, gpt3_suggestions[2:], galactica_suggestions[2:], num_small_chunks=args.num_forms_to_generate, SMALL_CHUNKS_ONLY=True)
     else:
-        text_chunks = load_text_chunks(abstracts, tldrs, gpt3_suggestions, galactica_suggestions)
+        text_chunks = load_text_chunks(abstracts, tldrs, gpt3_suggestions[2:], galactica_suggestions[2:])
 
     SCOPES = "https://www.googleapis.com/auth/drive"
     DISCOVERY_DOC = "https://forms.googleapis.com/$discovery/rest?version=v1"
@@ -260,7 +302,7 @@ if __name__ == "__main__":
     form_service = discovery.build('forms', 'v1', http=creds.authorize(
         Http()), discoveryServiceUrl=DISCOVERY_DOC, static_discovery=False)
 
-    example_string_1 = f"Let's go through an example:\n\nAbstract: {example_abstract_1}\n\nTLDR: {example_tldr_1}\n\n*Things you would need to fill out*:\n\nTask(s) mentioned in paper:\nsemantic image segmentation\n\nDomain of paper (e.g. biomedical or aerial):\nautonomous driving \n\nModality required by paper:\nimages\n\nLanguage of data or labels required:\nN/A\n\nTraining style:\nlarge-scale supervised training\n\nDoes this paper discuss sentence-level or paragraph-level text processing?:\nN/A\n\nFinal Query:\nthere are multiple queries you could write for this abstract:\n    -We want to build a system for semantic image segmentation for self-driving cars\n    -I propose a method to improve semantic image segmentation from images using large-scale supervised learning\n    -I want to work on semantic image segmentation for autonomous vehicles"
+    #example_string_1 = f"Let's go through an example:\n\nAbstract: {example_abstract_1}\n\nTLDR: {example_tldr_1}\n\n*Things you would need to fill out*:\n\nTask(s) mentioned in paper:\nsemantic image segmentation\n\nDomain of paper (e.g. biomedical or aerial):\nautonomous driving \n\nModality required by paper:\nimages\n\nLanguage of data or labels required:\nN/A\n\nTraining style:\nlarge-scale supervised training\n\nDoes this paper discuss sentence-level or paragraph-level text processing?:\nN/A\n\nFinal Query:\nthere are multiple queries you could write for this abstract:\n    -We want to build a system for semantic image segmentation for self-driving cars\n    -I propose a method to improve semantic image segmentation from images using large-scale supervised learning\n    -I want to work on semantic image segmentation for autonomous vehicles"
     #example_string_2 = f"Example #2:\n\n*Abstract*: {example_abstract_2}\n\n*TLDR*: {example_tldr_2}\n\n*Task(s) mentioned in paper*: 3D image segmentation\n*Domain of paper (e.g. biomedical or aerial)*: medical images\n*Modality required by paper*: 3D images\n*Language of data or labels required*: N/A\n*Training style*:  large-scale supervised training\n*Does this paper discuss sentence-level or paragraph-level text processing?*:  N/A\n*Final Query*:\nThere are multiple possible queries for this abstract, including:\n    -We propose an approach for 3D image segmentation for biomedical image analysis\n    -We want to develop an efficient CNN-based model for 3D image segmentation from biomedical 3D images\n    -We propose an approach for 3D image segmentation from 3D (volumetric) images from fMRI scans"
 
     form_ids = []
@@ -275,11 +317,59 @@ if __name__ == "__main__":
         createResult = form_service.forms().create(body=initialForm).execute()
         created_form_id = createResult["formId"]
 
+        annotation_prompt = """Given an abstract from an artificial intelligence paper:
+1) extract keyphrases regarding:
+    - the task (e.g. image classification)
+    - data modality (e.g. images or speech)
+    - domain (e.g. biomedical or aerial)
+    - training style (unsupervised, semi-supervised, supervised, or reinforcement learning)
+    - text length (sentence-level or paragraph-level)
+    - language required (e.g. English)
+2) write a very short, single-sentence summary that contains these relevant keyphrases, only including other information if critical to understanding the abstract.
+
+Things to keep in mind:
+    - Do not spend more than *2 minutes* in total on each example. If you find yourself taking too long to understand or tag a given abstract, just skip to the next one.
+    - Do not mention any datasets by name.
+----------------
+
+Let's go through an example:
+Abstract: Semantic image segmentation is an essential component of modern autonomous driving systems, as an accurate understanding of the surrounding scene is crucial to navigation and action planning. Current state-of-the-art approaches in semantic image segmentation rely on pre-trained networks that were initially developed for classifying images as a whole. While these networks exhibit outstanding recognition performance (i.e., what is visible?), they lack localization accuracy (i.e., where precisely is something located?). Therefore, additional processing steps have to be performed in order to obtain pixel-accurate segmentation masks at the full image resolution. To alleviate this problem we propose a novel ResNet-like architecture that exhibits strong localization and recognition performance. We combine multi-scale context with pixel-level accuracy by using two processing streams within our network: One stream carries information at the full image resolution, enabling precise adherence to segment boundaries. The other stream undergoes a sequence of pooling operations to obtain robust features for recognition. The two streams are coupled at the full image resolution using residuals. Without additional processing steps and without pre-training, our approach achieves an intersection-over-union score of 71.8% on the Cityscapes dataset.
+
+TLDR: We propose a novel ResNet-like architecture that combines multi-scale context with pixel-level accuracy for Semantic Image Segmentation.
+---
+*Things you would need to fill out*:
+
+Task(s) mentioned in paper:
+semantic image segmentation
+
+Domain of paper (e.g. biomedical or aerial):
+autonomous driving
+
+Modality required by paper:
+images
+
+Language of data or labels required:
+N/A
+
+Training style:
+supervised
+
+Does this paper discuss sentence-level or paragraph-level text processing?:
+N/A
+
+Final Query:
+(there are multiple queries you could write for this abstract)
+
+    -We want to build a system for semantic image segmentation for self-driving cars
+    -I propose a method to improve semantic image segmentation from images using large-scale supervised learning
+    -I want to work on semantic image segmentation for autonomous vehicles
+"""
+
         update = {
             "requests": [{
                 "updateFormInfo": {
                     "info": {
-                        'description': f'We are developing a dataset search engine which accepts natural language descriptions of what the user wants to build.\nFor each abstract, extract the following keyphrases:\n- task\n- domain (if necessary)\n- modality required (if necessary)\n- language of data or labels required (if necessary)\n- training data requirements: unsupervised, semi-supervised, few shot, or large-scale supervised training/finetuning (if necessary)\n- sentence-level or paragraph-level (if necessary)\n\nThen, for each abstract, write a query for our search engine that the authors of the paper could have used to find their datasets, incorporating the keyphrases above to the extent that it is natural. Write the system description in the first person future tense (as if you were the abstract author of the provided abstract).\n\nDo not mention any datasets by name.\n---------\n\n{example_string_1}',
+                        'description': annotation_prompt,
                     },
                     "updateMask": "description"
                 }},
