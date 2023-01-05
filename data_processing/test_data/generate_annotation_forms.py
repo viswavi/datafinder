@@ -9,25 +9,30 @@ import jsonlines
 from httplib2 import Http
 from oauth2client import client, file, tools
 
-def load_text_chunks(abstracts, tldrs, gpt3_suggestions, galactica_suggestions, chunk_size=20, num_small_chunks=4, small_chunk_size=5, SMALL_CHUNKS_ONLY=False):
+parser = argparse.ArgumentParser()
+parser.add_argument("--test-set-queries", default="/Users/vijay/Documents/code/dataset-recommendation/scirex_abstracts.temp")
+parser.add_argument("--tldrs", default="/Users/vijay/Documents/code/dataset-recommendation/scirex_tldrs.hypo")
+parser.add_argument("--form-ids-file", default="/Users/vijay/Documents/code/dataset-recommendation/data_processing/test_data/annotation_form_tracker.json")
+parser.add_argument("--gpt3-suggestions", default="/Users/vijay/Documents/code/dataset-recommendation/test_abstracts_parsed_by_gpt3_postprocessed.jsonl")
+parser.add_argument("--galactica-suggestions", default="/Users/vijay/Documents/code/dataset-recommendation/test_abstracts_parsed_by_galactica_postprocessed.jsonl")
+parser.add_argument("--num-forms-to-generate", type=int, default=1)
+
+def load_text_chunks(chunk_sizes, offer_paid_option, abstracts, tldrs, gpt3_suggestions, galactica_suggestions, index_offset=0):
     assert len(abstracts) == len(tldrs)
-    chunks = [[]]
-    small_chunks = 0
+    chunks = [{"offer_paid_option": offer_paid_option[0], "docs": []}]
     for i, (a, t,  gpt, galactica) in enumerate(zip(abstracts, tldrs, gpt3_suggestions, galactica_suggestions)):
         text_dict = {"abstract": a,
                      "tldr": t,
                      "gpt_suggestions": gpt,
-                     "galactica_suggestions": galactica}
-        chunks[-1].append(text_dict)
-        if small_chunks < num_small_chunks:
-            if len(chunks[-1]) == small_chunk_size:
-                chunks.append([])
-                small_chunks += 1
-        else:
-            if SMALL_CHUNKS_ONLY:
+                     "galactica_suggestions": galactica,
+                     "test_set_idx": i + index_offset}
+        chunks[-1]["docs"].append(text_dict)
+        if len(chunks[-1]["docs"]) == chunk_sizes[0]:
+            chunk_sizes = chunk_sizes[1:]
+            if len(chunk_sizes) == 0:
                 break
-            if len(chunks[-1]) == chunk_size:
-                chunks.append([])
+            offer_paid_option = offer_paid_option[1:]
+            chunks.append({"offer_paid_option": offer_paid_option[0], "docs": []})    
     return chunks
 
 def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galactica_suggestions, paper_index=1):
@@ -104,7 +109,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
                     }
                 },
                 "location": {
-                    "index": (paper_index-1)*8+1
+                    "index": (paper_index-1)*8+2
                 }
             }
         }, {
@@ -119,7 +124,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
                     }
                 },
                 "location": {
-                    "index": (paper_index-1)*8+2
+                    "index": (paper_index-1)*8+3
                 }
             }
         }, {
@@ -134,7 +139,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
                     }
                 },
                 "location": {
-                    "index": (paper_index-1)*8+3
+                    "index": (paper_index-1)*8+4
                 }
             }
         }, {
@@ -160,7 +165,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
                     }
                 },
                 "location": {
-                    "index": (paper_index-1)*8+4
+                    "index": (paper_index-1)*8+5
                 }
             }
         }, {
@@ -175,7 +180,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
                     }
                 },
                 "location": {
-                    "index": (paper_index-1)*8+5
+                    "index": (paper_index-1)*8+6
                 }
             }
         }, {
@@ -203,7 +208,7 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
                     }
                 },
                 "location": {
-                    "index": (paper_index-1)*8+6
+                    "index": (paper_index-1)*8+7
                 }
             }
         }, {
@@ -227,14 +232,14 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
                     }
                 },
                 "location": {
-                    "index": (paper_index-1)*8+7
+                    "index": (paper_index-1)*8+8
                 }
             }
         }, {
             "createItem": {
                 "item": {
                     'title': 'Final Query',
-                    'description': f'Use any information you extracted in the questions above, along with any other critical information from the abstract that might inform the choice of dataset.\n\nSuggestion from GPT-3:\t\t"{gpt3_summary_suggestion}"\nSuggestion from Galactica:\t"{galactica_summary_suggestion}"',
+                    'description': f'Use any information you extracted in the questions above, along with any other critical information from the abstract into a single-sentence summary that might inform the choice of dataset.\n\nSuggestion from GPT-3:\t\t"{gpt3_summary_suggestion}"\nSuggestion from Galactica:\t"{galactica_summary_suggestion}"',
                     "questionItem": {
                         "question": {
                             'required': False,
@@ -245,20 +250,12 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
                     }
                 },
                 "location": {
-                    "index": (paper_index-1)*8+8
+                    "index": (paper_index-1)*8+9
                 }
             }
         }
     ]
     return update_requests
-
-parser = argparse.ArgumentParser()
-parser.add_argument("--test-set-queries", default="/Users/vijay/Documents/code/dataset-recommendation/scirex_abstracts.temp")
-parser.add_argument("--tldrs", default="/Users/vijay/Documents/code/dataset-recommendation/scirex_tldrs.hypo")
-parser.add_argument("--form-ids-file", default="/Users/vijay/Documents/code/dataset-recommendation/data_processing/test_data/annotation_form_tracker.json")
-parser.add_argument("--gpt3-suggestions", default="/Users/vijay/Documents/code/dataset-recommendation/test_abstracts_parsed_by_gpt3_postprocessed.jsonl")
-parser.add_argument("--galactica-suggestions", default="/Users/vijay/Documents/code/dataset-recommendation/test_abstracts_parsed_by_galactica_postprocessed.jsonl")
-parser.add_argument("--num-forms-to-generate", type=int, default=4)
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -280,15 +277,17 @@ if __name__ == "__main__":
 
     example_abstract_1 = abstracts[0]
     example_abstract_2 = abstracts[1]
-    abstracts = abstracts[2:]
 
     example_tldr_1 = tldrs[0]
     example_tldr_2 = tldrs[1]
-    tldrs = tldrs[2:]
+
+    chunk_sizes = [15] * 4 + [10] * 38
+    offer_paid_option = [True, True, True, False] + [True] * 13 + [False] * (42 - 17)
+
     if args.num_forms_to_generate is not None:
-        text_chunks = load_text_chunks(abstracts, tldrs, gpt3_suggestions[2:], galactica_suggestions[2:], num_small_chunks=args.num_forms_to_generate, SMALL_CHUNKS_ONLY=True)
+        text_chunks = load_text_chunks(chunk_sizes[:args.num_forms_to_generate], offer_paid_option, abstracts[2:], tldrs[2:], gpt3_suggestions[2:], galactica_suggestions[2:], index_offset=2)
     else:
-        text_chunks = load_text_chunks(abstracts, tldrs, gpt3_suggestions[2:], galactica_suggestions[2:])
+        text_chunks = load_text_chunks(chunk_sizes, offer_paid_option, abstracts[2:], tldrs[2:], gpt3_suggestions[2:], galactica_suggestions[2:], index_offset=2)
 
     SCOPES = "https://www.googleapis.com/auth/drive"
     DISCOVERY_DOC = "https://forms.googleapis.com/$discovery/rest?version=v1"
@@ -365,6 +364,19 @@ Final Query:
     -I want to work on semantic image segmentation for autonomous vehicles
 """
 
+        crediting_options = [{
+                                        'value': '$10 Amazon Gift Card'
+                                    }, {
+                                        'value': 'Acknowledgement in our paper (to be submitted to ACL 2023)'
+                                    }, {
+                                        'value': 'Group lunch on me (if you know the lead author, Vijay, personally)'
+                                    }, {
+                                        'value': 'None of the above.'
+                                    }
+                            ]
+        if chunk["offer_paid_option"] is False:
+            crediting_options = crediting_options[1:]
+
         update = {
             "requests": [{
                 "updateFormInfo": {
@@ -373,7 +385,8 @@ Final Query:
                     },
                     "updateMask": "description"
                 }},
-                {"createItem": {
+            {
+                "createItem": {
                     "item": {
                         'title': "What's your Andrew ID?",
                         "description": "Enter your email address if you are not a CMU affiliate.",
@@ -388,10 +401,28 @@ Final Query:
                         "index": 0
                     }
                 }
-            }]
+            },
+            {
+                "createItem": {
+                    "item": {
+                        'title': 'How would you prefer to be credited for your effort?',
+                        "questionItem": {
+                            "question": {
+                                'choiceQuestion': {
+                                    'type': 'RADIO',
+                                    'options': crediting_options
+                                }
+                            }
+                        }
+                    },
+                    "location": {
+                        "index": 1
+                    }
+                }
+        }]
         }
 
-        for i, doc in enumerate(chunk):
+        for i, doc in enumerate(chunk["docs"]):
             update["requests"].extend(construct_annotation_instance_update(doc["abstract"], doc["tldr"], doc["gpt_suggestions"], doc["galactica_suggestions"], paper_index=i+1))
 
 
@@ -402,8 +433,9 @@ Final Query:
         print(f"Created form ID: {created_form_id}")
         chunk_info = {
             "idx": chunk_idx,
+            "test_set_idxs": doc["idxs"],
             "form_id": created_form_id,
-            "abstract_ifo": chunk
+            "abstract_info": chunk["docs"]
         }
         form_ids.append(chunk_info)
 
