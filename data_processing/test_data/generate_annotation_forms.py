@@ -1,4 +1,4 @@
-# python generate_annotation_form.py
+# python generate_annotation_forms.py
 
 from __future__ import print_function
 
@@ -8,14 +8,17 @@ import json
 import jsonlines
 from httplib2 import Http
 from oauth2client import client, file, tools
+import os
 
 parser = argparse.ArgumentParser()
 parser.add_argument("--test-set-queries", default="/Users/vijay/Documents/code/dataset-recommendation/scirex_abstracts.temp")
 parser.add_argument("--tldrs", default="/Users/vijay/Documents/code/dataset-recommendation/scirex_tldrs.hypo")
-parser.add_argument("--form-ids-file", default="/Users/vijay/Documents/code/dataset-recommendation/data_processing/test_data/annotation_form_tracker.json")
+parser.add_argument("--form-ids-directory", default="/Users/vijay/Documents/code/dataset-recommendation/data_processing/test_data/")
 parser.add_argument("--gpt3-suggestions", default="/Users/vijay/Documents/code/dataset-recommendation/test_abstracts_parsed_by_gpt3_postprocessed.jsonl")
 parser.add_argument("--galactica-suggestions", default="/Users/vijay/Documents/code/dataset-recommendation/test_abstracts_parsed_by_galactica_postprocessed.jsonl")
-parser.add_argument("--num-forms-to-generate", type=int, default=1)
+parser.add_argument("--batch-tag", default="Z")
+parser.add_argument("--chunk-idxs-to-generate", default=None)
+parser.add_argument("--num-forms-to-generate", type=int, default=5)
 
 def load_text_chunks(chunk_sizes, offer_paid_option, abstracts, tldrs, gpt3_suggestions, galactica_suggestions, index_offset=0):
     assert len(abstracts) == len(tldrs)
@@ -260,6 +263,9 @@ def construct_annotation_instance_update(abstract, tldr, gpt3_suggestions, galac
 if __name__ == "__main__":
     args = parser.parse_args()
 
+    form_index_directory = os.path.join(args.form_ids_directory, f"batch_{args.batch_tag}")
+    os.makedirs(form_index_directory)
+
     abstracts = []
     for ab in [t.strip() for t in open(args.test_set_queries).readlines()]:
         if len(ab.strip()) == 0:
@@ -281,13 +287,13 @@ if __name__ == "__main__":
     example_tldr_1 = tldrs[0]
     example_tldr_2 = tldrs[1]
 
-    chunk_sizes = [15] * 4 + [10] * 38
-    offer_paid_option = [True, True, True, False] + [True] * 13 + [False] * (42 - 17)
+    chunk_sizes = [10] * 2 + [15] * 4 + [10] * 36
+    offer_paid_option = [False, False, True, True, True, False] + [True] * 13 + [False] * (42 - 19)
 
     if args.num_forms_to_generate is not None:
-        text_chunks = load_text_chunks(chunk_sizes[:args.num_forms_to_generate], offer_paid_option, abstracts[2:], tldrs[2:], gpt3_suggestions[2:], galactica_suggestions[2:], index_offset=2)
+        text_chunks = load_text_chunks(chunk_sizes[:args.num_forms_to_generate], offer_paid_option, abstracts, tldrs, gpt3_suggestions, galactica_suggestions)
     else:
-        text_chunks = load_text_chunks(chunk_sizes, offer_paid_option, abstracts[2:], tldrs[2:], gpt3_suggestions[2:], galactica_suggestions[2:], index_offset=2)
+        text_chunks = load_text_chunks(chunk_sizes, offer_paid_option, abstracts, tldrs, gpt3_suggestions, galactica_suggestions)
 
     SCOPES = "https://www.googleapis.com/auth/drive"
     DISCOVERY_DOC = "https://forms.googleapis.com/$discovery/rest?version=v1"
@@ -304,7 +310,6 @@ if __name__ == "__main__":
     #example_string_1 = f"Let's go through an example:\n\nAbstract: {example_abstract_1}\n\nTLDR: {example_tldr_1}\n\n*Things you would need to fill out*:\n\nTask(s) mentioned in paper:\nsemantic image segmentation\n\nDomain of paper (e.g. biomedical or aerial):\nautonomous driving \n\nModality required by paper:\nimages\n\nLanguage of data or labels required:\nN/A\n\nTraining style:\nlarge-scale supervised training\n\nDoes this paper discuss sentence-level or paragraph-level text processing?:\nN/A\n\nFinal Query:\nthere are multiple queries you could write for this abstract:\n    -We want to build a system for semantic image segmentation for self-driving cars\n    -I propose a method to improve semantic image segmentation from images using large-scale supervised learning\n    -I want to work on semantic image segmentation for autonomous vehicles"
     #example_string_2 = f"Example #2:\n\n*Abstract*: {example_abstract_2}\n\n*TLDR*: {example_tldr_2}\n\n*Task(s) mentioned in paper*: 3D image segmentation\n*Domain of paper (e.g. biomedical or aerial)*: medical images\n*Modality required by paper*: 3D images\n*Language of data or labels required*: N/A\n*Training style*:  large-scale supervised training\n*Does this paper discuss sentence-level or paragraph-level text processing?*:  N/A\n*Final Query*:\nThere are multiple possible queries for this abstract, including:\n    -We propose an approach for 3D image segmentation for biomedical image analysis\n    -We want to develop an efficient CNN-based model for 3D image segmentation from biomedical 3D images\n    -We propose an approach for 3D image segmentation from 3D (volumetric) images from fMRI scans"
 
-    form_ids = []
     for chunk_idx, chunk in enumerate(text_chunks):
         initialForm = {
             "info": {
@@ -432,11 +437,8 @@ Final Query:
         print(updateResult)
         print(f"Created form ID: {created_form_id}")
         chunk_info = {
-            "idx": chunk_idx,
-            "test_set_idxs": doc["idxs"],
+            "idx": chunk_idx + 1,
             "form_id": created_form_id,
             "abstract_info": chunk["docs"]
         }
-        form_ids.append(chunk_info)
-
-    json.dump(form_ids, open(args.form_ids_file, 'w'), indent=4)
+        json.dump(chunk_info, open(os.path.join(form_index_directory, f"{chunk_idx + 1}.json"), 'w'), indent=4)
