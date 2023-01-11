@@ -16,9 +16,9 @@ parser.add_argument("--tldrs", default="/Users/vijay/Documents/code/dataset-reco
 parser.add_argument("--form-ids-directory", default="/Users/vijay/Documents/code/dataset-recommendation/data_processing/test_data/")
 parser.add_argument("--gpt3-suggestions", default="/Users/vijay/Documents/code/dataset-recommendation/test_abstracts_parsed_by_gpt3_postprocessed.jsonl")
 parser.add_argument("--galactica-suggestions", default="/Users/vijay/Documents/code/dataset-recommendation/test_abstracts_parsed_by_galactica_postprocessed.jsonl")
-parser.add_argument("--batch-tag", default="Z")
+parser.add_argument("--batch-tag", default="A")
 parser.add_argument("--chunk-idxs-to-generate", default=None)
-parser.add_argument("--num-forms-to-generate", type=int, default=5)
+parser.add_argument("--num-forms-to-generate", type=int, default=None)
 
 def load_text_chunks(chunk_sizes, offer_paid_option, abstracts, tldrs, gpt3_suggestions, galactica_suggestions, index_offset=0):
     assert len(abstracts) == len(tldrs)
@@ -369,7 +369,8 @@ Final Query:
     -I want to work on semantic image segmentation for autonomous vehicles
 """
 
-        crediting_options = [{
+        crediting_options = [
+                                    {
                                         'value': '$10 Amazon Gift Card'
                                     }, {
                                         'value': 'Acknowledgement in our paper (to be submitted to ACL 2023)'
@@ -436,6 +437,7 @@ Final Query:
 
         print(updateResult)
         print(f"Created form ID: {created_form_id}")
+
         chunk_info = {
             "idx": chunk_idx + 1,
             "form_id": created_form_id,
