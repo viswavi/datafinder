@@ -113,6 +113,7 @@ def vectorize_text(text_lines, vectorizer, vectorizer_type, batch_size=400):
 def prepare_training_set(training_set, training_tldrs, vectorizer_type="tfidf", overwrite_cache=True, remove_function_words=False, remove_punctuation=False, lowercase_query=False, remove_stopwords=False):
     TRAINING_SET_CACHE = os.path.join(PICKLE_CACHES_DIR, vectorizer_type + "_vectorized_data.pkl")
     VECTORIZER_CACHE = os.path.join(PICKLE_CACHES_DIR, vectorizer_type + "_vectorizer.pkl")
+    final_training_tldrs = []
     assert vectorizer_type in ["tfidf", "bert"]
     if os.path.exists(TRAINING_SET_CACHE) and not overwrite_cache:
         vectorized_training_data = pickle.load(open(TRAINING_SET_CACHE, 'rb'))
@@ -126,8 +127,11 @@ def prepare_training_set(training_set, training_tldrs, vectorizer_type="tfidf", 
                                        remove_punctuation=remove_punctuation,
                                        lowercase_query=lowercase_query,
                                        remove_stopwords=remove_stopwords)
-            texts.append(text)
+            if len(row["datasets"]) == 0:
+                continue
             assert len(row["datasets"]) > 0
+            texts.append(text)
+            final_training_tldrs.append(tldr)
             dataset_labels.append(row["datasets"])
         if vectorizer_type == "tfidf":
             vectorizer = TfidfVectorizer(min_df=2)
@@ -140,7 +144,7 @@ def prepare_training_set(training_set, training_tldrs, vectorizer_type="tfidf", 
         vectorized_training_data = list(zip(vectorized_texts, dataset_labels))
         pickle.dump(vectorized_training_data, open(TRAINING_SET_CACHE, 'wb'))
         pickle.dump(vectorizer, open(VECTORIZER_CACHE, 'wb'))
-    return vectorized_training_data, vectorizer
+    return vectorized_training_data, vectorizer, final_training_tldrs
 
 
 def combine_hits(hits: List[SearchResult]) -> List[SearchResult]:
@@ -154,10 +158,11 @@ def combine_hits(hits: List[SearchResult]) -> List[SearchResult]:
                 break
         if not already_retrieved:
             final_hits.append(h)
-    final_hits = sorted(final_hits, key=lambda result: result.score, reverse=True)
+    final_hits = sorted(final_hits, key=lambda result: result.score)
     return final_hits
 
-def knn_search(query_text, query_metadata, dataset_metadata, query_vectors, faiss_index, training_data, combiner="weighted", num_results=4):
+
+def knn_search(query_text, query_metadata, dataset_metadata, query_vectors, faiss_index, training_data, training_set_tldrs, combiner="weighted", num_results=4):
     start = time.perf_counter()
     datasets_list = [datasets for _, datasets in training_data]
 
@@ -170,6 +175,7 @@ def knn_search(query_text, query_metadata, dataset_metadata, query_vectors, fais
     for row_idx in range(len(query_vectors)):
         query_meta = query_metadata[row_idx]
         query_year = query_meta["year"]
+        text = query_text[row_idx]
         hits = []
         if combiner == "exact_top":
             for i, score in enumerate(knn_distances[row_idx]):
@@ -214,8 +220,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--training-set", type=str, default="tagged_datasets.jsonl", help="Training collection of queries and documents")
     parser.add_argument("--training-tldrs", type=str, default="tagged_dataset_tldrs.hypo")
-    parser.add_argument("--test-set", type=str, default="data/test/test_dataset_collection.jsonl", help="Test collection of queries and documents")
-    parser.add_argument('--test_queries', type=str, default="data/test/test_queries.csv", help="List of newline-delimited queries")
     parser.add_argument('--query-metadata', type=str, default="data/test/scirex_queries_and_datasets.json")
     parser.add_argument('--output-file', type=str, default="data/test/retrieved_documents.trec", help="Retrieval file, in TREC format")
     parser.add_argument('--search-collection', type=str, default="dataset_search_collection/documents.jsonl")
@@ -226,15 +230,15 @@ if __name__ == "__main__":
     parser.add_argument('--knn-aggregator', type=str, choices=["exact_top", "weighted"])
     parser.add_argument('--vectorizer-type', type=str, choices=["tfidf", "bert"])
     parser.add_argument('--results-limit', default=None, type=int)
+    parser.add_argument('--use-keyphrases', action="store_true")
     args = parser.parse_args()
 
     training_set = list(jsonlines.open(args.training_set))
-    training_set_tldrs = open(args.training_tldrs).read().split("\n")[:-1]
+    training_set_tldrs = open(args.training_tldrs).read().split("\n")
 
     query_metadata = json.load(open(args.query_metadata))
     search_collection = list(jsonlines.open(args.search_collection))
-
-    vectorized_training_data, vectorizer = prepare_training_set(training_set,
+    vectorized_training_data, vectorizer, final_training_tldrs = prepare_training_set(training_set,
                                                                 training_set_tldrs,
                                                                 vectorizer_type=args.vectorizer_type,
                                                                 remove_function_words=args.remove_function_words,
@@ -248,7 +252,16 @@ if __name__ == "__main__":
         tsv_writer = csv.writer(out_file, delimiter='\t')
         tsv_writer.writerow(["QueryID", "Q0", "DocID", "Rank", "Score", "RunID"])
 
-        test_queries = [row for row in open(args.test_queries).read().split("\n") if len(row.split()) != 0] 
+        if args.use_keyphrases:
+            test_queries = [q["keyphrase_query"] for q in query_metadata]
+        else:
+            test_queries = [q["query"] for q in query_metadata]
+        full_queries = [q["query"] for  q in query_metadata]
+        valid_queries = [q["text"] for q in jsonlines.open("tevatron_data/test_queries.jsonl")]
+
+
+
+
         preprocessed_queries = []
         for query in test_queries:
             query_id = "_".join(query.split())
@@ -269,11 +282,12 @@ if __name__ == "__main__":
         for row in search_collection:
             dataset_metadata[row["id"]] = row
 
-        all_hits = knn_search(test_queries, query_metadata, dataset_metadata, query_vectors, faiss_index, vectorized_training_data, combiner=args.knn_aggregator)
+        all_hits = knn_search(test_queries, query_metadata, dataset_metadata, query_vectors, faiss_index, vectorized_training_data, final_training_tldrs, combiner=args.knn_aggregator)
         previous_hits = set()
         for query_idx, hits in enumerate(all_hits):
-            query = test_queries[query_idx]
-            query_id = "_".join(query.split())
+            if full_queries[query_idx] not in valid_queries:
+                continue
+            query_id = "_".join(full_queries[query_idx].split())
             for rank, hit in enumerate(hits):
                 docid = "_".join(hit.docid.split())
                 tsv_writer.writerow([query_id, "Q0", docid, str(rank+1), str(hit.score), "run-1"])

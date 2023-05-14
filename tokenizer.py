@@ -1,10 +1,12 @@
 import spacy
+from spacy.language import Language
 
 def make_tok_seg():
     '''
     Add a few special cases to spacy tokenizer so it works with ACe mistakes.
     '''
     # Prevent edge case where there are sentence breaks in bad places
+    @Language.component("tokeseg")
     def custom_seg(doc):
         for index, token in enumerate(doc):
             if '--' in token.text:
@@ -35,8 +37,8 @@ def make_tok_seg():
                         after.sent_start = False
         return doc
 
-    nlp = spacy.load('en')
-    nlp.add_pipe(custom_seg, before='parser')
+    nlp = spacy.load("en_core_web_sm")
+    nlp.add_pipe("tokeseg", before='parser')
 
     single_tokens = ['sgt.',
                         'sen.',

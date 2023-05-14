@@ -36,18 +36,18 @@ def convert_metadata_to_field_dicts(dataset_metadata):
 
 def main():
     start = time.perf_counter()
-    pwc_dataset_to_s2orc_mapping_file = os.path.join(s2orc_caches, "pwc_dataset_to_s2orc_mapping.pkl")
+    pwc_dataset_to_s2orc_mapping_file = os.path.join(s2orc_caches, "pwc_dataset_to_s2orc_mapping_01_15_2023.pkl")
 
     if os.path.exists(pwc_dataset_to_s2orc_mapping_file):
         dataset_to_s2orc_id_mapping = pickle.load(open(pwc_dataset_to_s2orc_mapping_file, 'rb'))
         print(f"Loaded {len(dataset_to_s2orc_id_mapping)} PwC dataset-to-S2orc mappings from  from {pwc_dataset_to_s2orc_mapping_file}.")
     else:
-        dataset_meta_cache_file = os.path.join(s2orc_caches, "dataset_paper_meta_file.pkl")
+        dataset_meta_cache_file = os.path.join(s2orc_caches, "dataset_paper_meta_file_01_15_2023.pkl")
         if os.path.exists(dataset_meta_cache_file):
             datasets_meta = pickle.load(open(dataset_meta_cache_file, 'rb'))
             print(f"Loaded {len(datasets_meta)} dataset metadata from {dataset_meta_cache_file}.")
         else:
-            pwc_datasets_file = "datasets.json"
+            pwc_datasets_file = "datasets_01_15_2023.json"
             pwc_datasets = json.load(open(pwc_datasets_file))
             client = PapersWithCodeClient(token="b3693879190fdbbaeb0e79e92d6188e8e4ac5188")
             datasets_meta = {}
@@ -143,7 +143,7 @@ def main():
                 if outbound_citation in reversed_dataset_to_s2orc_mapping:
                     cited_datasets[doc['paper_id']].extend(reversed_dataset_to_s2orc_mapping[outbound_citation])
 
-    cited_datasets_file = os.path.join(s2orc_caches, "s2orc_papers_citing_datasets.json")
+    cited_datasets_file = os.path.join(s2orc_caches, "s2orc_papers_citing_datasets_01_15_2023.json")
     print(f"{len(cited_datasets)} papers found that cite a dataset-paper. Wrote to {cited_datasets_file}")
     json.dump(cited_datasets, open(cited_datasets_file, 'w'))
 

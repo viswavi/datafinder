@@ -30,7 +30,7 @@ parser.add_argument('--s2orc-metadata-directory', type=str, default="/projects/o
 parser.add_argument('--tag-negatives', action="store_true")
 
 def load_introducing_paper_to_dataset_mapping():
-    mapping = pickle.load(open("/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/pwc_dataset_to_s2orc_mapping.pkl", 'rb'))
+    mapping = pickle.load(open("/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/pwc_dataset_to_s2orc_mapping_01_15_2023.pkl", 'rb'))
     reverse_mapping = {}
     for dataset, paperid in mapping.items():
         assert len(paperid) == 1
@@ -83,7 +83,7 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
                 continue
 
             if tag_negatives:
-                                                     mention_or_reference_hits = list(set(mention_hits).union(reference_hits))
+                mention_or_reference_hits = list(set(mention_hits).union(reference_hits))
                 dataset_tags = [d for d in dataset_name_lookup_map if d not in mention_or_reference_hits]
             else:
                 dataset_tags = []
@@ -154,7 +154,7 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
 def main():
     args = parser.parse_args()
 
-    pwc_datasets_file = "datasets.json"
+    pwc_datasets_file = "datasets_01_15_2023.json"
     pwc_datasets = json.load(open(pwc_datasets_file))
     dataset_name_lookup_map = defaultdict(list)
     for dataset_meta in pwc_datasets:
