@@ -1,20 +1,9 @@
 '''
-python data_processing/train_data/auto_tag_datasets.py \
-    --s2orc-full-text-directory S2ORC_PATH/s2orc_full_texts/ \
-    --s2orc-metadata-directory S2ORC_PATH/s2orc_metadata/ \
-    --pwc-to-s2orc-mapping S2ORC_PATH/s2orc_metadata/pwc_dataset_to_s2orc_mapping.pkl \
-    --pwc-datasets-file datasets.json \
-    --output-file tagged_dataset_positives.jsonl
+python auto_tag_datasets.py --output-file tagged_datasets.jsonl
 
 or
 
-python data_processing/train_data/auto_tag_datasets.py  \
-    --s2orc-full-text-directory S2ORC_PATH/s2orc_full_texts/ \
-    --s2orc-metadata-directory S2ORC_PATH/s2orc_metadata/ \
-    --pwc-to-s2orc-mapping S2ORC_PATH/s2orc_metadata/pwc_dataset_to_s2orc_mapping.pkl \
-    --pwc-datasets-file datasets.json \
-    --tag-negatives \
-    --output-file tagged_dataset_negatives.jsonl
+python auto_tag_datasets.py --output-file tagged_dataset_negatives.jsonl --tag-negatives
 '''
 
 import argparse
@@ -26,10 +15,8 @@ import jsonlines
 import numpy as np
 import os
 import pickle
-import sys
-sys.path.extend(["..", ".", "../.."])
 from tqdm import tqdm
-from utils.tokenizer import make_tok_seg
+from tokenizer import make_tok_seg
 
 np.random.seed(1900)
 
@@ -38,14 +25,12 @@ nlp = make_tok_seg()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('--output-file', type=str, default="tagged_datasets.jsonl")
-parser.add_argument('--s2orc-full-text-directory', type=str, default="S2ORC_PATH/s2orc_full_texts/")
-parser.add_argument('--s2orc-metadata-directory', type=str, default="S2ORC_PATH/s2orc_metadata/")
-parser.add_argument('--pwc-to-s2orc-mapping', type=str, default="S2ORC_PATH/s2orc_metadata/pwc_dataset_to_s2orc_mapping.pkl")
-parser.add_argument('--pwc-datasets-file', type=str, default="datasets.json")
+parser.add_argument('--s2orc-full-text-directory', type=str, default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_full_texts/")
+parser.add_argument('--s2orc-metadata-directory', type=str, default="/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/s2orc_metadata/")
 parser.add_argument('--tag-negatives', action="store_true")
 
-def load_introducing_paper_to_dataset_mapping(pwc_to_s2orc_mapping):
-    mapping = pickle.load(open(pwc_to_s2orc_mapping, 'rb'))
+def load_introducing_paper_to_dataset_mapping():
+    mapping = pickle.load(open("/projects/ogma2/users/vijayv/extra_storage/s2orc_caches/pwc_dataset_to_s2orc_mapping_01_15_2023.pkl", 'rb'))
     reverse_mapping = {}
     for dataset, paperid in mapping.items():
         assert len(paperid) == 1
@@ -98,7 +83,7 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
                 continue
 
             if tag_negatives:
-                                                     mention_or_reference_hits = list(set(mention_hits).union(reference_hits))
+                mention_or_reference_hits = list(set(mention_hits).union(reference_hits))
                 dataset_tags = [d for d in dataset_name_lookup_map if d not in mention_or_reference_hits]
             else:
                 dataset_tags = []
@@ -166,19 +151,23 @@ def tag_datasets(jsonl_writer, dataset_name_lookup_map, paper_to_dataset_mapping
         print(f"{num_documents_written} documents written to file so far.")
 
 
-if __name__ == "__main__":
+def main():
     args = parser.parse_args()
-    pwc_datasets_file = "datasets.json"
+
+    pwc_datasets_file = "datasets_01_15_2023.json"
     pwc_datasets = json.load(open(pwc_datasets_file))
     dataset_name_lookup_map = defaultdict(list)
     for dataset_meta in pwc_datasets:
         candidate_variants = [dataset_meta["name"]] + dataset_meta.get("variants", [])
         for variant in candidate_variants:
             dataset_name_lookup_map[dataset_meta["name"]].append(variant)
-    paper_to_dataset_mapping = load_introducing_paper_to_dataset_mapping(args.pwc_to_s2orc_mapping)
+    paper_to_dataset_mapping = load_introducing_paper_to_dataset_mapping()
 
     assert not os.path.exists(args.output_file), "Output file already exists"
 
     with open(args.output_file, 'wb') as f:
         writer = jsonlines.Writer(f)
         tag_datasets(writer, dataset_name_lookup_map, paper_to_dataset_mapping, args.s2orc_full_text_directory, args.s2orc_metadata_directory, tag_negatives=args.tag_negatives)
+
+if __name__ == "__main__":
+    main()

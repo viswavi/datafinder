@@ -1,7 +1,7 @@
 '''
 python generate_BM25_results.py --anserini-index indexes/dataset_collection_jsonl --output-file data/test/retrieved_documents_4_limit.trec --results-limit 4
 
-python generate_BM25_results.py --anserini-index indexes/dataset_search_collection_description_title_only --output-file data/test/retrieved_documents_query_filtered_4_limit.trec --results-limit 4
+python generate_BM25_results.py --anserini-index indexes/dataset_search_collection_no_abstracts_or_paper_text_jsonl --output-file data/test/retrieved_documents_query_filtered_4_limit.trec --results-limit 4
 
 
 python generate_BM25_results.py \
@@ -9,7 +9,7 @@ python generate_BM25_results.py \
     --remove-stopwords \
     --anserini-index indexes/dataset_collection_jsonl \
     --output-file data/test/retrieved_documents_query_stopwords_and_punctuation_removed.trec \
-    --search-collection data/dataset_search_collection.jsonl
+    --search-collection dataset_search_collection/documents.jsonl
 '''
 from nltk.corpus import stopwords
 from pyserini.search import SimpleSearcher
@@ -28,12 +28,11 @@ def remove_punctuation(st):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--test-set", type=str, default="test_dataset_collection.jsonl", help="Test collection of queries and documents")
-    parser.add_argument('--test_queries', type=str, default="test_queries.csv", help="List of newline-delimited queries")
-    parser.add_argument('--query-metadata', type=str, default="data/test_data.jsonl")
-    parser.add_argument('--output-file', type=str, default="retrieved_documents.trec", help="Retrieval file, in TREC format")
+    parser.add_argument('--query-metadata', type=str, default="data/test/scirex_queries_and_datasets.json")
+    parser.add_argument('--full-query-metadata', type=str, default=None)
+    parser.add_argument('--output-file', type=str, default="data/test/retrieved_documents.trec", help="Retrieval file, in TREC format")
     parser.add_argument('--anserini-index', type=str, default="indexes/dataset_collection_jsonl")
-    parser.add_argument('--search-collection', type=str, default="data/dataset_search_collection.jsonl")
+    parser.add_argument('--search-collection', type=str, default="dataset_search_collection/documents.jsonl")
     parser.add_argument('--remove-function-words', action="store_true")
     parser.add_argument('--remove-punctuation', action="store_true")
     parser.add_argument('--lowercase-query', action="store_true")
@@ -45,9 +44,14 @@ if __name__ == "__main__":
     for row in jsonlines.open(args.search_collection):
         dataset_metadata[row["id"]] = row
 
+    test_queries = [q["text"] for q in jsonlines.open(args.query_metadata)]
+
     query_metadata = {}
     for row in jsonlines.open(args.query_metadata):
-        query_metadata[row["tldr"]] = row
+        query_metadata[row["text"]] = row
+
+    if args.full_query_metadata is not None:
+        full_queries = [q["text"] for q in jsonlines.open(args.full_query_metadata)] 
 
     searcher = SimpleSearcher(args.anserini_index)
     searcher.set_bm25(k1=0.8, b=0.4)
@@ -56,10 +60,11 @@ if __name__ == "__main__":
         tsv_writer = csv.writer(out_file, delimiter='\t')
         tsv_writer.writerow(["QueryID", "Q0", "DocID", "Rank", "Score", "RunID"])
 
-        test_queries = [row for row in open(args.test_queries).read().split("\n") if len(row.split()) != 0] 
-        for query in test_queries:
+        for i, query in enumerate(test_queries):
             query_year = query_metadata[query]["year"]
             query_id = "_".join(query.split())
+            if args.full_query_metadata:
+                query_id = "_".join(full_queries[i].split())
             if args.remove_function_words:
                 st = ""
                 spacy_doc = nlp(query)
@@ -93,4 +98,3 @@ if __name__ == "__main__":
                 tsv_writer.writerow([query_id, "Q0", docid, str(rank+1), str(hit.score), "run-1"])
                 if args.results_limit is not None and rank + 1 == args.results_limit:
                     break
-            assert num_actual_hits > 0, breakpoint()
