@@ -58,7 +58,7 @@ if __name__ == "__main__":
             if docid in query_datasets[query_idx]:
                 continue
             query_datasets[query_idx].add(docid)
-            query = test_queries[query_idx]["text"]
+            query = test_queries[query_idx]["query"]
 
             if "[SEP]" in query:
                 query_id = "_".join(query.split("[SEP] ")[-1].split())
