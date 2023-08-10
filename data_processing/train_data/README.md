@@ -69,6 +69,16 @@ python data_processing/train_data/merge_tagged_datasets.py \
     --negative-mining hard \
     --anserini-index indexes/dataset_search_collection_description_title_only \
     --num-negatives 7
+
+python merge_tagged_datasets.py \
+    --combined-file data/train_data.jsonl \
+    --parse-file data/train_abstracts_parsed_by_galactica.jsonl \
+    --tagged-positives-file  data/tagged_dataset_positives.jsonl \
+    --tagged-negatives-file data/tagged_dataset_negatives.jsonl \
+    --negative-mining hard \
+    --anserini-index data/bm25_indexes/dataset_search_collection_no_abstracts_or_paper_text_jsonl \
+    --num-negatives 7
+
 ```
 
 That's it! After this long process, we now have an auto-tagged set of relevant datasets, ready to use for training a neural retriever, at `data/train_data.jsonl`.
