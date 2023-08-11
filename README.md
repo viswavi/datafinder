@@ -36,8 +36,11 @@ conda install faiss
 ```
 
 ```
-git submodule add https://github.com/castorini/anserini
+git submodule update --init --recursive
+
 cd anserini
+mvn clean package appassembler:assemble
+
 cd tools/eval && tar xvfz trec_eval.9.0.4.tar.gz && cd trec_eval.9.0.4 && make && cd ../../..
 cd tools/eval/ndeval && make && cd ../../../..
 ```
