@@ -23,7 +23,7 @@ parser.add_argument('--output-metadata-directory', type=str, default="tevatron_d
 parser.add_argument('--output-query-file', type=str, default="data/test_data.jsonl")
 parser.add_argument('--query-type', type=int, default=1, choices=["keyword", "natural_language"], help="Whether to use NL or keyword queries.")
 parser.add_argument('--num-shards', type=int, default=1, help="Number of shards of search collection to write")
-parser.add_argument('--test-queries', type=str, default="scirex_queries_and_datasets.json")
+parser.add_argument('--test-queries', type=str, default="data/test_data.jsonl")
 parser.add_argument('--tagged-datasets-file', type=str, default="tagged_datasets_merged_random_negatives.jsonl")
 parser.add_argument('--search-collection', type=str, default="dataset_search_collection.jsonl")
 parser.add_argument('--evaluation-tables-file', type=str, default=None, help="Path to the evaluation-tables.json file")
@@ -53,7 +53,7 @@ def write_rows(rows, outfile):
         writer.write_all(rows)
     print(f"Wrote {len(rows)} rows to {outfile}.")
 
-def generate_training_instances(training_set, doc2idx, idx2text):
+def generate_training_instances(training_set, doc2idx, idx2text, query_type):
     '''
     Each line should look like
     {'query': TEXT_TYPE, 'positives': List[TEXT_TYPE], 'negatives': List[TEXT_TYPE]}
@@ -62,7 +62,10 @@ def generate_training_instances(training_set, doc2idx, idx2text):
     for instance in tqdm(training_set):
         positives = [idx2text[doc2idx[pos]] for pos in instance["positives"]]
         negatives = [idx2text[doc2idx[neg]] for neg in instance["negatives"]]
-        query = instance["tldr"]
+        if query_type == "natural_language":
+            query = instance["query"]
+        else:
+            query = instance["keyphrase_query"]
         training_rows.append({'query': query, "positives": positives, "negatives": negatives})
     return training_rows
 
@@ -72,7 +75,7 @@ def format_query_file(test_query_file, doc2idx, query_type):
     {"text_id": xxx, "text": TEXT_TYPE}
     '''
     formatted_queries = []
-    for i, row in tqdm(enumerate(json.load(open(test_query_file)))):
+    for i, row in tqdm(enumerate(jsonlines.open(test_query_file))):
         dataset_idxs = [doc2idx[dataset] for dataset in row["documents"]]
         # formatted_queries.append({"text_id": dataset_idxs[0], "text": row["query"]})
         if query_type == "natural_language":
@@ -115,7 +118,7 @@ if __name__ == "__main__":
     search_rows = generate_inference_instances(search_collection, dataset2id)
 
     tagged_datasets = load_rows(args.tagged_datasets_file)
-    training_rows = generate_training_instances(tagged_datasets, dataset2id, id2text)
+    training_rows = generate_training_instances(tagged_datasets, dataset2id, id2text, query_type = args.query_type)
     write_rows(training_rows, os.path.join(args.output_training_directory, "train_data.json"))
     
     shards = []
