@@ -1,3 +1,6 @@
 [submodule "scitldr"]
 	path = scitldr
 	url = https://github.com/allenai/scitldr
+[submodule "anserini"]
+	path = anserini
+	url = https://github.com/castorini/anserini.git
