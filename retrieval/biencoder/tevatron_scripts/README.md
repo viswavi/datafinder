@@ -49,7 +49,7 @@ CUDA_VISIBLE_DEVICES=0 python -m tevatron.driver.encode \
     --model_name_or_path tevatron_models/scibert \
     --fp16 \
     --per_device_eval_batch_size 128 \
-    --encode_in_path tevatron_data/search_raw/0.json \
+    --encode_in_path tevatron_data/search_data/0.json \
     --encoded_save_path $ENCODE_DIR/0.pt
 ```
 
@@ -73,7 +73,7 @@ CUDA_VISIBLE_DEVICES=2 python -m tevatron.driver.encode \
 ### Retrieve Documents for Queries
 ```
 ENCODE_QRY_DIR=tevatron_data/test_queries_encoded
-ENCODE_DIR=tevatron_data/scibert/
+ENCODE_DIR=tevatron_data/search_encoded
 DEPTH=100
 CUDA_VISIBLE_DEVICES=2 python -m tevatron.faiss_retriever \
     --query_reps $ENCODE_QRY_DIR/query.pt \
@@ -86,11 +86,11 @@ CUDA_VISIBLE_DEVICES=2 python -m tevatron.faiss_retriever \
 
 ### Convert tevatron output to TREC format
 ```
-python convert_tevatron_output_to_trec_eval.py \
-    --output-trec-file tevatron_models/scibert/tevatron.trec \
+python retrieval/biencoder/tevatron_scripts/convert_tevatron_output_to_trec_eval.py \
+    --output-trec-file tevatron_data/tevatron.trec \
     --tevatron-ranking tevatron_models/scibert/rank.tsv \
     --id2dataset tevatron_data/metadata/id2dataset.json \
-    --test-queries data/test_queries.jsonl \
+    --test-queries data/test_data.jsonl \
     --search-collection data/dataset_search_collection.jsonl \
     --depth 5
 ```
