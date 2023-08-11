@@ -21,7 +21,7 @@ parser.add_argument('--output-training-directory', type=str, default="tevatron_d
 parser.add_argument('--output-search-directory', type=str, default="tevatron_data/search_raw")
 parser.add_argument('--output-metadata-directory', type=str, default="tevatron_data/metadata")
 parser.add_argument('--output-query-file', type=str, default="data/test_data.jsonl")
-parser.add_argument('--query-type', type=int, default=1, choices=["keyword", "natural_language"], help="Whether to use NL or keyword queries.")
+parser.add_argument('--query-type', type=str, default="natural_language", choices=["keyword", "natural_language"], help="Whether to use NL or keyword queries.")
 parser.add_argument('--num-shards', type=int, default=1, help="Number of shards of search collection to write")
 parser.add_argument('--test-queries', type=str, default="data/test_data.jsonl")
 parser.add_argument('--tagged-datasets-file', type=str, default="tagged_datasets_merged_random_negatives.jsonl")
