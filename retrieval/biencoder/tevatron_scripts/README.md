@@ -81,7 +81,7 @@ python retrieval/biencoder/tevatron_scripts/convert_tevatron_output_to_trec_eval
     --output-trec-file tevatron_data/tevatron.trec \
     --tevatron-ranking tevatron_models/scibert/rank.tsv \
     --id2dataset tevatron_data/metadata/id2dataset.json \
-    --test-queries data/test_data.jsonl \
+    --test-queries tevatron_data/test_queries.jsonl \
     --search-collection data/dataset_search_collection.jsonl \
     --depth 5
 ```
