@@ -16,6 +16,7 @@ import sys
 from tqdm import tqdm
 sys.path.extend(["..", ".", "../..", "../../.."])
 
+
 parser = argparse.ArgumentParser()
 parser.add_argument('--output-training-directory', type=str, default="tevatron_data/training_raw")
 parser.add_argument('--output-search-directory', type=str, default="tevatron_data/search_raw")
@@ -29,7 +30,7 @@ parser.add_argument('--search-collection', type=str, default="dataset_search_col
 parser.add_argument('--evaluation-tables-file', type=str, default=None, help="Path to the evaluation-tables.json file")
 
 def format_search_text(row, separator=" [SEP] "):
-    return separator.join([get_key_if_not_none(row, "contents"), get_key_if_not_none(row, "title"), get_key_if_not_none(row, "abstract")])
+    return separator.join([get_key_if_not_none(row, "contents"), get_key_if_not_none(row, "title"), get_key_if_not_none(row, "structured_info")])
 
 def generate_doc_ids(documents):
     '''
