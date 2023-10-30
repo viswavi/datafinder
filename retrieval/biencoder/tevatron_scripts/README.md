@@ -76,6 +76,7 @@ CUDA_VISIBLE_DEVICES=2 python -m tevatron.faiss_retriever \
 ```
 
 ### Convert tevatron output to TREC format
+For natural language queries:
 ```
 python retrieval/biencoder/tevatron_scripts/convert_tevatron_output_to_trec_eval.py \
     --output-trec-file tevatron_data/tevatron.trec \
@@ -85,3 +86,15 @@ python retrieval/biencoder/tevatron_scripts/convert_tevatron_output_to_trec_eval
     --search-collection data/dataset_search_collection.jsonl \
     --depth 5
 ```
+
+For keyphrase queries:
+```
+python retrieval/biencoder/tevatron_scripts/convert_tevatron_output_to_trec_eval.py \
+    --output-trec-file tevatron_data/tevatron.trec \
+    --tevatron-ranking tevatron_models/scibert/rank.tsv \
+    --id2dataset tevatron_data/metadata/id2dataset.json \
+    --test-queries <path to test_queries.jsonl file for NATURAL LANGUAGE queries \
+    --search-collection data/dataset_search_collection.jsonl \
+    --depth 5
+```
+(the command here is different than for natural language queries, because we want to map the keyphrase query IDs to the natural language query IDs, since our ground truth is already processed to include natural language query IDs).
